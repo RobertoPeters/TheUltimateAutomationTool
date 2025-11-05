@@ -416,3 +416,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+
+/src/Tuat/Settings
+/src/Tuat/DeployLinux
+/Docker

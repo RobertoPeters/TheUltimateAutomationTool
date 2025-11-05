@@ -1,0 +1,203 @@
+﻿@page "/"
+@using System.Collections.Concurrent
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject Radzen.DialogService DialogService
+@inject IAutomationService AutomationService
+@inject IUIEventRegistration UIEventRegistration
+@inject IDataService DataService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>HASM - Automations</PageTitle>
+
+<h1>Automations</h1>
+
+@if (automations != null)
+{
+    <RadzenButton Text="Add" Click="@AddAutomationAsync" />
+    <RadzenDataGrid @ref="grid" AllowFiltering="true"
+                    AllowColumnResize="true"
+                    AllowAlternatingRows="false"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterMode="FilterMode.SimpleWithMenu"
+                    AllowSorting="true"
+                    PageSize="20"
+                    Density="Density.Compact"
+                    RowClick="@OnRowClick"
+                    AllowPaging="true"
+                    AllowVirtualization="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
+                    Data="@automations.Values.ToList()"
+                    TItem="AutomationInfo">
+        <Columns>
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.EditId)"
+                                  Filterable="false"
+                                  Sortable="false"
+                                  Resizable="false"
+                                  Width="96px"
+                                  Title="">
+                <Template Context="automation">
+                    <div @onclick:stopPropagation="true">
+                        <RadzenIcon style="cursor:pointer;"
+                                    Icon="edit"
+                                    @onclick="@(() => NavigationManager.NavigateTo($"/editautomation/{automation.Id}"))" />
+                        <RadzenIcon style="cursor:pointer;"
+                                    Icon="open_in_new"
+                                    @onclick="@(() => JSRuntime.InvokeVoidAsync("navigateToTarget", $"/editautomation/{automation.Id}", "_blank"))" />
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.Name)"
+                                  Title="Name" />
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.AutomationType)"
+                                  Title="Type" />
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.IsSubAutomation)"
+                                  Title="Sub automation">
+                <Template Context="automation">
+                    @(automation.IsSubAutomation ? "Yes" : "No")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.Enabled)"
+                                  Title="Enabled">
+                <Template Context="automation">
+                    @(automation.EnabledText())
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Property="@nameof(AutomationInfo.Mode)"
+                                  Title="Mode" />
+
+            <RadzenDataGridColumn TItem="AutomationInfo"
+                                  Filterable="false"
+                                  Sortable="false"
+                                  Property="@nameof(AutomationInfo.Id)"
+                                  Title="">
+                <Template Context="automation">
+                    <div @onclick:stopPropagation="true">
+                        <RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Text="Copy" Click="@(() => CopyAutomationAsync(automation))" />
+                        <RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAutomationAsync(automation))" />
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private sealed class AutomationInfo
+    {
+        public IAutomationHandler AutomationHandler { get; set; } = null!;
+
+        public int EditId => 0;
+        public int Id => AutomationHandler.Automation.Id;
+        public string Name => AutomationHandler.Automation.Name;
+        public string AutomationType => Tuat.Generic.AutomationTypeDisplayNames.FirstOrDefault(x => x.TypeName == AutomationHandler.Automation.AutomationType)?.DisplayName ?? "";
+        public bool Enabled => AutomationHandler.Automation.Enabled;
+        public string EnabledText()
+        {
+            if (IsSubAutomation)
+            {
+                return "N/A";
+            }
+            return Enabled ? "Yes" : "No";
+        }
+        public bool IsSubAutomation => AutomationHandler.Automation.IsSubAutomation;
+        public string? Mode => AutomationHandler.RunningState.ToString();
+    }
+    private readonly ConcurrentDictionary<int, AutomationInfo> automations = [];
+
+    private RadzenDataGrid<AutomationInfo>? grid;
+
+    protected override void OnInitialized()
+    {
+        var allautomations = AutomationService.GetAutomations();
+        foreach (var automation in allautomations)
+        {
+            var v = new AutomationInfo()
+            {
+                AutomationHandler = automation
+            };
+            automations.TryAdd(automation.Automation.Id, v);
+        }
+        UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
+        base.OnInitialized();
+    }
+
+    private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
+    {
+        if (automationHandler.AutomationHandler.Automation.Id < 0)
+        {
+            automations.TryRemove(-automationHandler.AutomationHandler.Automation.Id, out _);
+        }
+        else if (automations.TryGetValue(automationHandler.AutomationHandler.Automation.Id, out var automationInfo))
+        {
+            automationInfo.AutomationHandler = automationHandler.AutomationHandler;
+        }
+        else
+        {
+            automationInfo = new AutomationInfo()
+            {
+                AutomationHandler = automationHandler.AutomationHandler
+            };
+            automations.TryAdd(automationHandler.AutomationHandler.Automation.Id, automationInfo);
+        }
+
+        InvokeAsync(grid!.Reload);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
+    }
+
+    private async Task AddAutomationAsync()
+    {
+        var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { });
+        if (sm != null)
+        {
+            await DataService.AddOrUpdateAutomationAsync(sm);
+        }
+    }
+
+    void OnRowClick(DataGridRowMouseEventArgs<AutomationInfo> item)
+    {
+        NavigationManager.NavigateTo($"/editautomation/{item.Data.AutomationHandler.Automation.Id}");
+    }
+
+    private async Task DeleteAutomationAsync(AutomationInfo mi)
+    {
+        if (await DialogService.ShowNoYesConfirmationDialogAsync("Delete Automation", $"Are you sure you want to delete the automation '{mi.Name}'?") == Dialogs.ConfirmationDialog.DialogButton.Yes)
+        {
+            await DataService.DeleteAutomationAsync(mi.AutomationHandler.Automation);
+        }
+    }
+
+    private async Task CopyAutomationAsync(AutomationInfo mi)
+    {
+        var newStateMachine = mi.AutomationHandler.Automation.CopyObject()!;
+        newStateMachine.Id = 0;
+        newStateMachine.Enabled = false;
+        var index = 1;
+        newStateMachine.Name = $"{mi.Name}({index})";
+        while (automations.Values.Any(x => x.Name == newStateMachine.Name))
+        {
+            index++;
+            newStateMachine.Name = $"{mi.Name}({index})";
+        }
+        await DataService.AddOrUpdateAutomationAsync(newStateMachine);
+    }
+}

@@ -1,0 +1,42 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IClientSettings
+
+<RadzenFormField Text="Host *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@clientProperties!.Host" Name="Host" Placeholder="http://localhost:8123" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Host" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Token *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenPassword @bind-Value="@clientProperties!.Token" Name="Token" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Token" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public Client Model { get; set; } = null!;
+
+	private HAClientHandler.ClientProperties clientProperties = new();
+
+	public string? GetClientPropertiesData() => System.Text.Json.JsonSerializer.Serialize(clientProperties);
+
+	protected override void OnInitialized()
+	{
+		if (!string.IsNullOrWhiteSpace(Model.Data))
+		{
+			clientProperties = System.Text.Json.JsonSerializer.Deserialize<HAClientHandler.ClientProperties>(Model.Data) ?? new();
+		}
+		base.OnInitialized();
+	}
+
+}
+

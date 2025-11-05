@@ -1,0 +1,19 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IScriptEditor
+
+<RadzenTextArea @bind-Value="@Script" Rows="10" Style="width: 100%;" spellcheck="false" />
+
+
+@code {
+	[Parameter]
+	public string? Script { get; set; }
+
+	public string? GetScript()
+	{
+		return Script;
+	}
+}
+

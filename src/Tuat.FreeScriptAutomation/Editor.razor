@@ -1,0 +1,15 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IAutomationEditor
+
+<RadzenTextArea @bind-Value="@Automation.Data" Rows="10" Style="width: 100%;" spellcheck="false" />
+
+
+@code {
+	[Parameter]
+	public Automation Automation { get; set; } = null!;
+
+}
+

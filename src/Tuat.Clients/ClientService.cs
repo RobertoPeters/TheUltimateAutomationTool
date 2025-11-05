@@ -1,0 +1,126 @@
+﻿using System.Collections.Concurrent;
+using Tuat.Interfaces;
+using Tuat.Models;
+
+namespace Tuat.Clients;
+
+public class ClientService(IDataService _dataService, IVariableService _variableService, IMessageBusService _messageBusService): IClientService
+{
+    private readonly ConcurrentDictionary<int, IClientHandler> _handlers = [];
+
+    public async Task StartAsync()
+    {
+        var clients = _dataService.GetClients();
+        foreach (var client in clients)
+        {
+            await AddClientAsync(client);
+        }
+    }
+
+    public List<IClientHandler> GetClients()
+    {
+        return _handlers.Values.ToList();
+    }
+
+    public List<T> GetClients<T>() where T : IClientHandler
+    {
+        return _handlers.Values.OfType<T>().ToList();
+    }
+
+    public async Task Handle(List<VariableInfo> variables)
+    {
+        var variablesToHandle = variables.ToLookup(x => x.Variable.ClientId, x => x);
+        foreach (var variableGroup in variablesToHandle)
+        {
+            if (_handlers.TryGetValue(variableGroup.Key, out var clientHandler) && clientHandler.Client.Enabled)
+            {
+                var deletedGroup = variableGroup.Where(x => x.Variable.Id < 0).ToList();
+                var addOrUpdatedGroup = variableGroup.Where(x => x.Variable.Id >= 0).ToList();
+                if (deletedGroup.Any())
+                {
+                    await clientHandler.DeleteVariableInfoAsync(deletedGroup);
+                }
+                else if (addOrUpdatedGroup.Any())
+                {
+                    await clientHandler.AddOrUpdateVariableInfoAsync(addOrUpdatedGroup);
+                }
+            }
+        }
+    }
+
+    public async Task Handle(Client client)
+    {
+        IClientHandler? clientHandler = null;
+        if (client.Id < 0)
+        {
+            clientHandler = await RemoveClientAsync(-client.Id);
+            if ((clientHandler != null))
+            {
+                clientHandler.Client.Id = client.Id;
+            }
+        }
+        else if (_handlers.TryGetValue(client.Id, out clientHandler))
+        {
+            await clientHandler.UpdateAsync(client);
+        }
+        else
+        {
+            clientHandler = await AddClientAsync(client);
+        }
+
+        if (clientHandler != null)
+        {
+            await _messageBusService.PublishAsync(new ClientHandlerInfo(clientHandler!));
+        }
+    }
+
+    public async Task<bool> ExecuteAsync(int clientId, int? variableId, string command, object? parameter1, object? parameter2, object? parameter3)
+    {
+        if (_handlers.TryGetValue(clientId, out var clientHandler))
+        {
+            return await clientHandler.ExecuteAsync(variableId, command, parameter1, parameter2, parameter3);
+        }
+        return false;
+    }
+
+    private async Task<IClientHandler?> RemoveClientAsync(int id)
+    {
+        IClientHandler? clientHandler = null;
+        if (_handlers.TryRemove(id, out clientHandler))
+        {
+            await clientHandler.DisposeAsync();
+        }
+        return clientHandler;
+    }
+
+    private async Task<IClientHandler?> AddClientAsync(Client client)
+    {
+        IClientHandler? clientHandler = null;
+        
+        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
+                   where a.GetTypes().Any(x => x.FullName == client.ClientType)
+                   select a).FirstOrDefault();
+
+        if (asm == null)
+        {
+            return null;
+        }
+
+        var type = asm.GetTypes().First(x => x.FullName == client.ClientType);
+        clientHandler = (IClientHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { client, _variableService, _messageBusService }, null);
+
+        if (clientHandler != null)
+        {
+            if (!_handlers.TryAdd(client.Id, clientHandler))
+            {
+                clientHandler = null;
+            }
+            else
+            {
+                await clientHandler.StartAsync();
+            }
+        }
+        return clientHandler;
+    }
+}
+

@@ -1,0 +1,88 @@
+﻿@using Tuat.Dialogs
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject IDataService DataService
+
+@inherits ResultDialogBase<Automation>
+
+<RadzenTemplateForm @ref="Form" Data="@Model" TItem="Automation">
+    <RadzenStack>
+        <RadzenFormField Text="Type *" Variant="@Variant.Outlined">
+            <ChildContent>
+                <RadzenDropDown Data="Tuat.Generic.AutomationTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.AutomationType" Name="AutomationType" Disabled=@(Model!.Id != 0) />
+            </ChildContent>
+            <Helper>
+                <RadzenRequiredValidator Component="AutomationType" Text="This field is required" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
+            <ChildContent>
+                <RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
+            </ChildContent>
+            <Helper>
+                <RadzenRequiredValidator Component="Name" Text="This field is required" />
+            </Helper>
+        </RadzenFormField>
+        @if (!Model!.IsSubAutomation)
+        {
+            <RadzenFormField Text="Enabled" Variant="@Variant.Outlined">
+                <RadzenRadioButtonList @bind-Value="@Model.Enabled" TValue="bool" class="rz-m-4 rz-mt-8">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Yes" Value="true" />
+                        <RadzenRadioButtonListItem Text="No" Value="false" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </RadzenFormField>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.AutomationType))
+        {
+            <DynamicComponent @ref="settingsProperties" Type="@(SettingsComponentType())" Parameters="SettingsPropertiesParameters" />
+        }
+    </RadzenStack>
+    <RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+</RadzenTemplateForm>
+
+
+@code {
+    protected override bool ShowClose => true;
+    protected override bool IsPersistent => false;
+    protected override bool CloseDialogOnOverlayClick => true;
+    protected override int? WidthInPixels => 1400;
+
+    [Parameter]
+    public Automation? Automation { get; set; }
+
+    private Automation? Model;
+    private RadzenTemplateForm<Automation>? Form;
+    private DynamicComponent? settingsProperties;
+    Dictionary<string, object?>? SettingsPropertiesParameters;
+
+    protected override void OnInitialized()
+    {
+        if (Automation == null)
+        {
+            Automation = new Automation();
+            Automation.Enabled = false;
+        }
+        Model = Automation.CopyObject()!;
+        Model.Id = Automation.Id;
+        SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model } };
+        base.OnInitialized();
+    }
+
+    Type? SettingsComponentType()
+    {
+        return string.IsNullOrWhiteSpace(Model?.AutomationType) ? null : Tuat.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Model.AutomationType).SettingsEditorComponentType;
+    }
+
+    void OnSubmit()
+    {
+        Form!.EditContext.Validate();
+        if (Form.IsValid)
+        {
+            Model!.Settings = ((IAutomationSettings)settingsProperties!.Instance!).GetAutomationPropertiesData() ?? "";
+            Close(Model!);
+        }
+    }
+}

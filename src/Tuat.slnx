@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="nuget.config" />
+  </Folder>
+  <Project Path="HassClient/HassClient.csproj" />
+  <Project Path="Tuat.Automations/Tuat.Automations.csproj" Id="c7442c81-32f3-45be-9e9a-49a5c82b5858" />
+  <Project Path="Tuat.Clients/Tuat.Clients.csproj" Id="5f1de019-028f-4cc5-95ed-4aff1340306a" />
+  <Project Path="Tuat.Data/Tuat.Data.csproj" Id="4dfa9ef2-14d8-419e-8b3b-d9171a2bf546" />
+  <Project Path="Tuat.Dialogs/Tuat.Dialogs.csproj" Id="fb8ca842-1a89-459c-9190-4f19dfe597f7" />
+  <Project Path="Tuat.FreeScriptAutomation/Tuat.FreeScriptAutomation.csproj" Id="61266fff-0456-454d-83ea-9f1e34701bab" />
+  <Project Path="Tuat.GenericClient/Tuat.GenericClient.csproj" Id="04d511e2-171f-4260-b3e0-97bb8b966e4b" />
+  <Project Path="Tuat.HAClient/Tuat.HAClient.csproj" Id="1185cf49-de5f-401a-8c2d-590013e9fd7d" />
+  <Project Path="Tuat.Interfaces/Tuat.Interfaces.csproj" Id="b5ef0cef-4fd5-48ca-982a-3d552335245c" />
+  <Project Path="Tuat.MessageBus/Tuat.MessageBus.csproj" Id="6c9f850e-2abc-4541-bad6-66790b6aaf9d" />
+  <Project Path="Tuat.Models/Tuat.Models.csproj" Id="e641d196-48e4-4075-ad5a-0c45b49626af" />
+  <Project Path="Tuat.Repository/Tuat.Repository.csproj" Id="d15750c9-9b5c-4128-90ce-1cc915371fbf" />
+  <Project Path="Tuat.ScriptEngineJavaScript/Tuat.ScriptEngineJavaScript.csproj" Id="23a37bae-aca7-4c77-8f98-7e908015e59f" />
+  <Project Path="Tuat.Variables/Tuat.Variables.csproj" Id="6376404f-5413-484b-88bd-fae19a2b83aa" />
+  <Project Path="Tuat/Tuat.csproj" />
+</Solution>

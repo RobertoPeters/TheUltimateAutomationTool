@@ -1,0 +1,156 @@
+﻿@page "/clients"
+@using System.Collections.Concurrent
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject IClientService ClientService
+@inject DialogService DialogService
+@inject IDataService DataService
+@inject IUIEventRegistration UIEventRegistration
+@implements IDisposable
+
+<PageTitle>HASM - Clients</PageTitle>
+
+<h1>Clients</h1>
+
+@if (gridData != null)
+{
+	<RadzenButton Size="ButtonSize.Small" Text="Add Client" Click="@(() => AddOrEditClientAsync(null))" />
+
+	<RadzenDataGrid @ref="grid" AllowFiltering="true"
+					AllowColumnResize="true"
+					AllowAlternatingRows="false"
+					FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+					FilterMode="FilterMode.SimpleWithMenu"
+					AllowSorting="true"
+					PageSize="20"
+					AllowColumnPicking="true"
+					AllowColumnReorder="true"
+					AllowPaging="true"
+					AllowVirtualization="true"
+					PagerHorizontalAlign="HorizontalAlign.Left"
+					ShowPagingSummary="true"
+					Data="@gridData"
+					TItem="IClientHandler">
+		<Template Context="client">
+
+@* 			<VariablesControl Client="@client.Client" />
+ *@
+		</Template>
+		<Columns>
+			<RadzenDataGridColumn TItem="IClientHandler"
+								  Property="Client.Id"
+								  Title="Id" />
+
+			<RadzenDataGridColumn TItem="IClientHandler"
+								  Property="Client.Name"
+								  Title="Name" />
+
+			<RadzenDataGridColumn TItem="IClientHandler"
+								  Property="Client.ClientType"
+								  Title="Type">
+				<Template Context="client">
+					@(Tuat.Generic.ClientTypeDisplayNames.FirstOrDefault(x => x.TypeName == client.Client.ClientType)?.DisplayName ?? client.Client.ClientType)
+				</Template>
+			</RadzenDataGridColumn>
+
+			<RadzenDataGridColumn TItem="IClientHandler"
+								  Filterable="false"
+								  Sortable="false"
+								  Title="Connected">
+				<Template Context="client">
+					@if(client is IClientConnected connected)
+					{
+						<RadzenLabel>@(connected.IsConnected ? "Yes" : "No")</RadzenLabel>
+					}
+					else
+					{
+						<RadzenLabel>N/A</RadzenLabel>
+					}
+				</Template>
+			</RadzenDataGridColumn>
+
+			<RadzenDataGridColumn TItem="IClientHandler"
+								  Filterable="false"
+								  Sortable="false"
+								  Property="Client.Id"
+								  Title="">
+
+				<Template Context="client">
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.ExtraSmall" Text="Edit" Visible="@(client.Client.Id >= 3)" Click="@(() => AddOrEditClientAsync(client))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Visible="@(client.Client.Id >= 3)" Click="@(() => OnDeleteAsync(client))" />
+				</Template>
+			</RadzenDataGridColumn>
+		</Columns>
+	</RadzenDataGrid>
+}
+
+@code {
+	private RadzenDataGrid<IClientHandler>? grid;
+
+	private ConcurrentDictionary<int, IClientHandler> clients = [];
+	private List<IClientHandler>? gridData;
+
+	protected override void OnInitialized()
+	{
+		UIEventRegistration.ClientHandlerChanged += ClientHandlerChanged;
+		UIEventRegistration.ClientConnectionInfoChanged += ClientConnectionInfoChanged;
+		clients = new ConcurrentDictionary<int, IClientHandler>(ClientService.GetClients<IClientHandler>().ToDictionary(x => x.Client.Id, x => x));
+		gridData = clients.Values.ToList();
+		base.OnInitialized();
+	}
+
+	private void UpdateGridData()
+	{
+		gridData = clients.Values.ToList();
+		if (grid != null)
+		{
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
+			grid.Data = gridData;
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
+			grid.Reload();
+		}
+	}
+
+	private void ClientConnectionInfoChanged(object? sender, ClientConnectionInfo clientConnectionInfo)
+	{
+		InvokeAsync(UpdateGridData);
+	}
+
+	private void ClientHandlerChanged(object? sender, ClientHandlerInfo clientHandler)
+	{
+		if (clientHandler.ClientHandler.Client.Id < 0)
+		{
+			clients?.TryRemove(-clientHandler.ClientHandler.Client.Id, out _);
+		}
+		else
+		{
+			clients?.AddOrUpdate(clientHandler.ClientHandler.Client.Id, clientHandler.ClientHandler, (_, _) => clientHandler.ClientHandler);
+		}
+
+		InvokeAsync(UpdateGridData);
+	}
+
+	public void Dispose()
+	{
+		UIEventRegistration.ClientConnectionInfoChanged -= ClientConnectionInfoChanged;
+		UIEventRegistration.ClientHandlerChanged -= ClientHandlerChanged;
+	}
+
+	private async Task OnDeleteAsync(IClientHandler client)
+	{
+		if (await DialogService.ShowNoYesConfirmationDialogAsync("Delete client", $"Are you sure you want to delete the client '{client.Client.Name}'?") == Dialogs.ConfirmationDialog.DialogButton.Yes)
+		{
+			await DataService.DeleteClientAsync(client.Client);
+		}
+	}
+
+	private async Task AddOrEditClientAsync(IClientHandler? client)
+	{
+		await DialogService.ShowDialogAsync<AddOrEditClientDialog>($"{(client == null ? "Add" : "Edit")} Client", dialog =>
+		{
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
+			dialog.Id = client?.Client.Id;
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
+		});
+	}
+}
