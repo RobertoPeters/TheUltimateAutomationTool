@@ -142,7 +142,7 @@ public class FreeScriptHandler: IAutomationHandler
         {
             lock (_lockEngineObject)
             {
-                var scriptEngine = GetScriptEngine();
+                var scriptEngine = GetScriptEngine(Automation.ScriptType);
                 if (scriptEngine == null)
                 {
                     DisposeEngines();
@@ -186,12 +186,12 @@ public class FreeScriptHandler: IAutomationHandler
         }
     }
 
-    private IScriptEngine? GetScriptEngine()
+    public static IScriptEngine? GetScriptEngine(string scriptType)
     {
         IScriptEngine? scriptEngine = null;
 
         var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == Automation.ScriptType)
+                   where a.GetTypes().Any(x => x.FullName == scriptType)
                    select a).FirstOrDefault();
 
         if (asm == null)
@@ -199,7 +199,7 @@ public class FreeScriptHandler: IAutomationHandler
             return null;
         }
 
-        var type = asm.GetTypes().First(x => x.FullName == Automation.ScriptType);
+        var type = asm.GetTypes().First(x => x.FullName == scriptType);
         scriptEngine = (IScriptEngine?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, null);
         return scriptEngine;
     }

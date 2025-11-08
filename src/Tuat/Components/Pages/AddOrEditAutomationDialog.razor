@@ -8,6 +8,14 @@
 
 <RadzenTemplateForm @ref="Form" Data="@Model" TItem="Automation">
     <RadzenStack>
+        <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
+            <ChildContent>
+                <RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
+            </ChildContent>
+            <Helper>
+                <RadzenRequiredValidator Component="Name" Text="This field is required" />
+            </Helper>
+        </RadzenFormField>
         <RadzenFormField Text="Type *" Variant="@Variant.Outlined">
             <ChildContent>
                 <RadzenDropDown Data="Tuat.Generic.AutomationTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.AutomationType" Name="AutomationType" Disabled=@(Model!.Id != 0) />
@@ -16,12 +24,12 @@
                 <RadzenRequiredValidator Component="AutomationType" Text="This field is required" />
             </Helper>
         </RadzenFormField>
-        <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
+        <RadzenFormField Text="Script language *" Variant="@Variant.Outlined">
             <ChildContent>
-                <RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
+                <RadzenDropDown Data="Tuat.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.ScriptType" Name="ScriptType" Disabled=@(Model!.Id != 0) />
             </ChildContent>
             <Helper>
-                <RadzenRequiredValidator Component="Name" Text="This field is required" />
+                <RadzenRequiredValidator Component="ScriptType" Text="This field is required" />
             </Helper>
         </RadzenFormField>
         @if (!Model!.IsSubAutomation)

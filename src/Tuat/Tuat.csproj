@@ -24,6 +24,7 @@
 	<ItemGroup>
 		<PackageReference Include="Radzen.Blazor" />
 		<PackageReference Include="WolverineFx" />
+		<PackageReference Include="BlazorMonaco" />
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -40,6 +41,10 @@
 		<ProjectReference Include="..\Tuat.Repository\Tuat.Repository.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineJavaScript\Tuat.ScriptEngineJavaScript.csproj" />
 		<ProjectReference Include="..\Tuat.Variables\Tuat.Variables.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <Folder Include="Components\Controls\" />
 	</ItemGroup>
 
 </Project>

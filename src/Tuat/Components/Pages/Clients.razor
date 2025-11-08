@@ -8,7 +8,7 @@
 @inject IUIEventRegistration UIEventRegistration
 @implements IDisposable
 
-<PageTitle>HASM - Clients</PageTitle>
+<PageTitle>TUAT - Clients</PageTitle>
 
 <h1>Clients</h1>
 
@@ -32,9 +32,7 @@
 					Data="@gridData"
 					TItem="IClientHandler">
 		<Template Context="client">
-
-@* 			<VariablesControl Client="@client.Client" />
- *@
+ 			<VariablesControl Client="@client.Client" />
 		</Template>
 		<Columns>
 			<RadzenDataGridColumn TItem="IClientHandler"
@@ -76,8 +74,8 @@
 								  Title="">
 
 				<Template Context="client">
-					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.ExtraSmall" Text="Edit" Visible="@(client.Client.Id >= 3)" Click="@(() => AddOrEditClientAsync(client))" />
-					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Visible="@(client.Client.Id >= 3)" Click="@(() => OnDeleteAsync(client))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.ExtraSmall" Text="Edit" Visible="@(client.Client.Name != "Generic")" Click="@(() => AddOrEditClientAsync(client))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Visible="@(client.Client.Name != "Generic")" Click="@(() => OnDeleteAsync(client))" />
 				</Template>
 			</RadzenDataGridColumn>
 		</Columns>

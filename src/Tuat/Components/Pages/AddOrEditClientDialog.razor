@@ -88,7 +88,7 @@
         Form!.EditContext.Validate();
         if (Form.IsValid)
         {
-            Model!.Data = ((IClientSettings)clientProperties!.Instance!).GetClientPropertiesData() ?? "";
+            Model!.Settings = ((IClientSettings)clientProperties!.Instance!).GetClientPropertiesData() ?? "";
             await DataService.AddOrUpdateClientAsync(Model);
             Close();
         }

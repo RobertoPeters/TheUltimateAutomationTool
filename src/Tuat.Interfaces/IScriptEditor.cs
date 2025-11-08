@@ -2,5 +2,5 @@
 
 public interface IScriptEditor
 {
-    string? GetScript();
+    Task<string?> GetScriptAsync();
 }

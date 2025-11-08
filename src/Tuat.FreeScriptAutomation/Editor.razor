@@ -2,14 +2,50 @@
 @using Radzen.Blazor
 @using Tuat.Interfaces
 @using Tuat.Models
+@inject Tuat.Interfaces.IClientService ClientService
 @implements IAutomationEditor
 
-<RadzenTextArea @bind-Value="@Automation.Data" Rows="10" Style="width: 100%;" spellcheck="false" />
-
+@if (ScriptEditorType != null)
+{
+	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Edit properties" />
+	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" />
+	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Restart" />
+	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
+		<RadzenSplitterPane Min="10px">
+			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
+		</RadzenSplitterPane>
+		<RadzenSplitterPane Size="300px" Min="10px">
+			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
+		</RadzenSplitterPane>
+	</RadzenSplitter>
+}
 
 @code {
 	[Parameter]
 	public Automation Automation { get; set; } = null!;
 
+	[Parameter]
+	public string? Height { get; set; }
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	Dictionary<string, object?>? EditorPropertiesParameters;
+	Dictionary<string, object?>? SystemScriptParameters;
+	DynamicComponent? scriptEditor;
+	FreeScriptHandler.AutomationProperties automationProperties;
+
+	protected override async Task OnInitializedAsync()
+	{
+		automationProperties = FreeScriptHandler.GetAutomationProperties(Automation.Data);
+		using var scriptEngine = FreeScriptHandler.GetScriptEngine(Automation.ScriptType);
+		if (string.IsNullOrWhiteSpace(Automation.Data))
+		{
+			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", false) ?? "";
+		}
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", "85vh" } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", "85vh" }, { "ReadOnly", true } };
+		await base.OnInitializedAsync();
+	}
 }
 

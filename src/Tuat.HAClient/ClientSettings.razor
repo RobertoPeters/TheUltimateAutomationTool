@@ -31,9 +31,9 @@
 
 	protected override void OnInitialized()
 	{
-		if (!string.IsNullOrWhiteSpace(Model.Data))
+		if (!string.IsNullOrWhiteSpace(Model.Settings))
 		{
-			clientProperties = System.Text.Json.JsonSerializer.Deserialize<HAClientHandler.ClientProperties>(Model.Data) ?? new();
+			clientProperties = System.Text.Json.JsonSerializer.Deserialize<HAClientHandler.ClientProperties>(Model.Settings) ?? new();
 		}
 		base.OnInitialized();
 	}

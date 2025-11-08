@@ -132,4 +132,49 @@ public static class Generic
             return _automationTypeDisplayNames!;
         }
     }
+
+    private static List<TypeDisplayName> _scriptTypeDisplayNames = null!;
+    public static List<TypeDisplayName> ScriptTypeDisplayNames
+    {
+        get
+        {
+            if (_scriptTypeDisplayNames == null)
+            {
+                lock (_lockObject)
+                {
+                    if (_scriptTypeDisplayNames == null)
+                    {
+                        var interfaceType = typeof(Tuat.Interfaces.IScriptEngine);
+                        var types = AppDomain.CurrentDomain.GetAssemblies()
+                            .SelectMany(s => s.GetTypes())
+                            .Where(p => interfaceType.IsAssignableFrom(p));
+
+                        List<TypeDisplayName> items = [];
+                        foreach (var type in types)
+                        {
+                            if (type.IsInterface || type.IsAbstract)
+                            {
+                                continue;
+                            }
+
+                            var attribute = type.GetAttribute<System.ComponentModel.DisplayNameAttribute>();
+                            var editorControl = type.GetAttribute<System.ComponentModel.EditorAttribute>();
+                            items.Add(new TypeDisplayName
+                            {
+                                TypeName = type.FullName!,
+                                Type = type,
+                                DisplayName = attribute != null ? attribute.DisplayName : type.Name,
+                                EditorType = editorControl?.EditorTypeName,
+                                EditorComponentType = ComponentType(editorControl?.EditorTypeName)
+                            });
+                        }
+                        _scriptTypeDisplayNames = items;
+
+                    }
+                }
+            }
+            return _scriptTypeDisplayNames!;
+        }
+    }
+
 }

@@ -1,0 +1,276 @@
+﻿@using System.Collections.Concurrent
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject DialogService DialogService
+@inject IVariableService VariableService
+@inject IDataService DataService
+@inject IUIEventRegistration UIEventRegistration
+@implements IDisposable
+
+@if (gridData != null)
+{
+    <RadzenDataGrid @ref="grid" AllowFiltering="true"
+                    AllowColumnResize="true"
+                    AllowAlternatingRows="false"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    FilterMode="FilterMode.SimpleWithMenu"
+                    AllowSorting="true"
+                    PageSize="20"
+                    AllowColumnPicking="AllowColumnPicking"
+                    AllowColumnReorder="true"
+                    AllowPaging="true"
+                    AllowVirtualization="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left"
+                    ShowPagingSummary="true"
+                    Data="@gridData"
+                    TItem="VariableInfo">
+        <Template Context="variable">
+            <div class="row">
+                <div class="col-2">
+                    <RadzenCheckBox TValue="bool"
+                                    Change="@(() => MockingChangedAsync(variable))"
+                                    @bind-Value="variable.IsMocking" />
+                    <RadzenLabel Text="Mocking" />
+                </div>
+                <div class="col-4">
+                    @if (variable.Variable.MockingValues?.Any() == true)
+                    {
+                        <RadzenDropDown Data="@variable.Variable.MockingValues"
+                                        Change="@(() => MockingChangedAsync(variable))"
+                                        AllowClear="true"
+                                        @bind-Value=@variable.MockingValue />
+                    }
+                    else
+                    {
+                        <RadzenTextBox @bind-Value=@variable.MockingValue
+                                       Change="@(() => MockingChangedAsync(variable))" />
+
+                    }
+                </div>
+            </div>
+        </Template>
+        <Columns>
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Variable.Id"
+                                  Title="Id" />
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Variable.Name"
+                                  Title="Name" />
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Variable.ClientId"
+                                  FilterValue="@filterClient"
+                                  Title="Client">
+                <FilterTemplate>
+                    <RadzenDropDown Data="@clients.Values"
+                                    AllowClear="true"
+                                    TextProperty="Name"
+                                    ValueProperty="Id"
+                                    Disabled="@(Client != null)"
+                                    Change="@grid!.Reload"
+                                    @bind-Value=@filterClient />
+                </FilterTemplate>
+                <Template Context="variable">
+                    @clients[variable.Variable.ClientId].Name
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Variable.AutomationId"
+                                  FilterValue="@filterAutomation"                                  
+                                  Title="Automation">
+                <FilterTemplate>
+                    <RadzenDropDown Data="@automations.Values"
+                                    AllowClear="true"
+                                    TextProperty="Name"
+                                    Disabled="@(Automation != null)"
+                                    ValueProperty="Id"
+                                    Change="@grid!.Reload"
+                                    @bind-Value=@filterAutomation />
+                </FilterTemplate>
+                <Template Context="variable">
+                    @($"{(variable.Variable.AutomationId == null ? "" : automations[variable.Variable.AutomationId.Value].Name)}")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Variable.Data"
+                                  Title="Data" />
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="Value"
+                                  Title="Value" />
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Property="VariableValue.Value"
+                                  Title="Real Value" />
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Filterable="false"
+                                  Property="VariableValue.Update"
+                                  Title="Update">
+                <Template Context="variable">
+                    @(variable.VariableValue.Update.ToLocalTime().ToString("ddd dd MMM HH:mm.sss"))
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="VariableInfo"
+                                  Filterable="false"
+                                  Sortable="false"
+                                  Property="Variable.Id"
+                                  Title="">
+                <Template Context="variable">
+                    <RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteVariableAsync(variable))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    [Parameter]
+    public Client? Client { get; set; }
+
+    [Parameter]
+    public Automation? Automation { get; set; }
+
+    [Parameter]
+    public bool AllowColumnPicking { get; set; } = true;
+
+    private ConcurrentDictionary<int, VariableInfo> variables = [];
+    private ConcurrentDictionary<int, Client> clients = [];
+    private ConcurrentDictionary<int, Automation> automations = [];
+
+    private RadzenDataGrid<VariableInfo>? grid;
+    private List<VariableInfo>? gridData;
+    private int? filterClient = null;
+    private int? filterAutomation = null;
+
+    protected override void OnInitialized()
+    {
+        clients = new ConcurrentDictionary<int, Client>(DataService.GetClients().ToDictionary(x => x.Id, x => x));
+        automations = new ConcurrentDictionary<int, Automation>(DataService.GetAutomations().ToDictionary(x => x.Id, x => x));
+        variables = new ConcurrentDictionary<int, VariableInfo>(VariableService.GetVariables().ToDictionary(x => x.Variable.Id, x => x));
+        gridData = variables.Values.ToList();
+        UIEventRegistration.VariablesChanged += VariablesChanged;
+        UIEventRegistration.VariableValuesChanged += VariableValuesChanged;
+        UIEventRegistration.ClientHandlerChanged += ClientHandlerChanged;
+        UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
+        if (Client != null)
+        {
+            filterClient = Client.Id;
+        }
+        if (Automation != null)
+        {
+            filterAutomation = Automation.Id;
+        }
+        base.OnInitialized();
+    }
+
+    private void UpdateGridData()
+    {
+        gridData = variables.Values.ToList();
+        if (grid != null)
+        {
+            grid.Data = gridData;
+            grid!.Reload();
+        }
+    }
+
+    private async Task MockingChangedAsync(VariableInfo variable)
+    {
+        await VariableService.SetVariableValuesAsync([(variable.Variable.Id, variable.IsMocking, variable.MockingValue)]);
+    }
+
+    private void VariableValuesChanged(object? sender, List<VariableValueInfo> variablesInfos)
+    {
+        foreach (var variable in variablesInfos)
+        {
+            this.variables.AddOrUpdate(variable.Variable.Id, variable, (_, _) => variable);
+        }
+        InvokeAsync(() =>
+        {
+            grid?.Reload();
+        });
+    }
+
+    private void VariablesChanged(object? sender, List<VariableInfo> variablesInfos)
+    {
+        bool updateNeeded = false;
+        foreach (var variable in variablesInfos)
+        {
+            if (variable.Variable.Id < 0)
+            {
+                if (this.variables.TryRemove(-variable.Variable.Id, out _))
+                {
+                    updateNeeded = true;
+                }
+            }
+            else
+            {
+                if (!variables.TryGetValue(variable.Variable.Id, out _))
+                {
+                    updateNeeded = true;
+                }
+                this.variables.AddOrUpdate(variable.Variable.Id, variable, (_, _) => variable);
+            }
+        }
+        InvokeAsync(() =>
+        {
+            if (updateNeeded)
+            {
+                UpdateGridData();
+            }
+            else
+            {
+                grid?.Reload();
+            }
+        });
+    }
+
+    private void ClientHandlerChanged(object? sender, ClientHandlerInfo client)
+    {
+        if (client.ClientHandler.Client.Id < 0)
+        {
+            clients.TryRemove(-client.ClientHandler.Client.Id, out _);
+        }
+        else
+        {
+            clients.AddOrUpdate(client.ClientHandler.Client.Id, client.ClientHandler.Client, (_, _) => client.ClientHandler.Client);
+        }
+        if (grid != null)
+        {
+            InvokeAsync(grid.Reload);
+        }
+    }
+
+    private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
+    {
+        if (automationHandler.AutomationHandler.Automation.Id < 0)
+        {
+            automations.TryRemove(-automationHandler.AutomationHandler.Automation.Id, out _);
+        }
+        else
+        {
+            automations.AddOrUpdate(automationHandler.AutomationHandler.Automation.Id, automationHandler.AutomationHandler.Automation, (_, _) => automationHandler.AutomationHandler.Automation);
+        }
+        if (grid != null)
+        {
+            InvokeAsync(grid.Reload);
+        }
+    }
+
+    private async Task DeleteVariableAsync(VariableInfo variable)
+    {
+        await VariableService.DeleteVariableAsync(variable.Variable.Id);
+    }
+
+    public void Dispose()
+    {
+        UIEventRegistration.VariableValuesChanged -= VariableValuesChanged;
+        UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
+        UIEventRegistration.ClientHandlerChanged -= ClientHandlerChanged;
+        UIEventRegistration.VariablesChanged += VariablesChanged;
+    }
+}

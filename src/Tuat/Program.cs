@@ -92,7 +92,7 @@ var t = new Thread(new ThreadStart(
                 Name = "Generic",
                 Enabled = true,
                 ClientType = typeof(Tuat.GenericClient.GenericClientHandler).FullName!,
-                Data = ""
+                Settings = ""
             };
             await dataService.AddOrUpdateClientAsync(genericClient);
         }

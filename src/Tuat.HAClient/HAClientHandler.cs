@@ -52,9 +52,9 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
             list.Add(variable);
         }
 
-        if (!string.IsNullOrWhiteSpace(_client.Data))
+        if (!string.IsNullOrWhiteSpace(_client.Settings))
         {
-            _clientProperties = System.Text.Json.JsonSerializer.Deserialize<ClientProperties>(_client.Data) ?? new();
+            _clientProperties = System.Text.Json.JsonSerializer.Deserialize<ClientProperties>(_client.Settings) ?? new();
         }
         await CreateHassWSApiAsync();
     }
@@ -63,9 +63,9 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
     {
         await DisposeHassApiAsync();
         _client = client;
-        if (!string.IsNullOrWhiteSpace(client.Data))
+        if (!string.IsNullOrWhiteSpace(client.Settings))
         {
-            _clientProperties = System.Text.Json.JsonSerializer.Deserialize<ClientProperties>(client.Data) ?? new();
+            _clientProperties = System.Text.Json.JsonSerializer.Deserialize<ClientProperties>(client.Settings) ?? new();
         }
         else
         {

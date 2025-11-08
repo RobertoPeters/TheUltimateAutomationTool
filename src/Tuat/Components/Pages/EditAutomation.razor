@@ -10,20 +10,11 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-<style>
-    .my-editor-class {
-        height: 85vh;
-    }
-</style>
-
-<PageTitle>HASM - Edit Script</PageTitle>
-
-<NavigationLock ConfirmExternalNavigation="true"
-                OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
+<PageTitle>TUAT - Edit Automation</PageTitle>
 
 @if (Automation != null)
 {
-    <span>Edit Script: @Automation.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
+    <span>Edit Automation: @Automation.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
     @if (!string.IsNullOrWhiteSpace(AutomationHandler?.ErrorMessage))
     {
         <p>@AutomationHandler.ErrorMessage</p>
@@ -39,9 +30,7 @@
             <RadzenTabs>
                 <Tabs>
                     <RadzenTabsItem Text="Variables">
-
- @*                        <VariablesControl Automation="Automation" AllowColumnPicking=false />
- *@
+                        <VariablesControl Automation="Automation" AllowColumnPicking=false />
                     </RadzenTabsItem>
                     <RadzenTabsItem Text="Intermediate">
                         <div style="position: relative;">
@@ -88,7 +77,6 @@ else
         public DateTime Time { get; set; } = DateTime.Now;
     }
 
-    private string? _unsavedData = null;
     private Automation Automation = null!;
     private IAutomationHandler AutomationHandler = null!;
     private readonly List<LogData> logLines = [];
@@ -98,43 +86,37 @@ else
     private DynamicComponent? automationEditor;
     Dictionary<string, object?>? EditorPropertiesParameters;
 
-    private async Task<string?> GetAutomationDataAsync()
-    {
-        await SaveAutomationPropertiesToAutomationAsync();
-        return System.Text.Json.JsonSerializer.Serialize(Automation);
-    }
-
     Type? EditorComponentType()
     {
         return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Automation.AutomationType).EditorComponentType;
     }
 
-    async Task ReloadScriptAsync(Automation? useAutomation)
+    Type? ScriptEditorComponentType()
+    {
+        return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
+    }
+
+    async Task ReloadAutomationAsync(Automation? useAutomation)
     {
         Automation = useAutomation ?? AutomationHandler.Automation;
-        _unsavedData = await GetAutomationDataAsync();
     }
 
     protected override async Task OnInitializedAsync()
     {
         AutomationHandler = AutomationService.GetAutomation(Id);
         Automation = AutomationHandler.Automation;
-        EditorPropertiesParameters = new Dictionary<string, object?>() { { "Automation", Automation } };
-
-        // UIEventRegistration.LogEntryAdded += LogEvent;
-        // UIEventRegistration.ScriptHandlerInfoChanged += ScriptHandlerInfoChanged;
-        // UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
-        // UIEventRegistration.AutomationInfoChanged += AutomationInfoChanged;
-        // _unsavedData = System.Text.Json.JsonSerializer.Serialize(Automation);
+        EditorPropertiesParameters = new Dictionary<string, object?>() { { "Automation", Automation }, { "Height", "85vh" }, { "ScriptEditorType", ScriptEditorComponentType() } };
+        UIEventRegistration.LogEntryAdded += LogEvent;
+        UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
+        UIEventRegistration.AutomationStateInfoChanged += AutomationInfoChanged;
         await base.OnInitializedAsync();
     }
 
     public void Dispose()
     {
-        // UIEventRegistration.AutomationInfoChanged -= AutomationInfoChanged;
-        // UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
-        // UIEventRegistration.LogEntryAdded -= LogEvent;
-        // UIEventRegistration.ScriptHandlerInfoChanged -= ScriptHandlerInfoChanged;
+        UIEventRegistration.AutomationStateInfoChanged -= AutomationInfoChanged;
+        UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
+        UIEventRegistration.LogEntryAdded -= LogEvent;
     }
 
     void LogEvent(object? sender, LogEntry logEntry)
@@ -152,49 +134,28 @@ else
         });
     }
 
-    // private void ScriptHandlerInfoChanged(object? sender, ScriptHandler.ScriptHandlerInfo scriptInfo)
-    // {
-    //     InvokeAsync(() =>
-    //     {
-    //         StateHasChanged();
-    //     });
-    // }
-
-    // private void AutomationHandlerChanged(object? sender, IAutomationHandler automationHandler)
-    // {
-    //     InvokeAsync(async () =>
-    //     {
-    //         if (automationHandler.Automation.Id < 0)
-    //         {
-    //             NavigationManager.NavigateTo("\\");
-    //         }
-    //         else
-    //         {
-    //             await ReloadScriptAsync(null);
-    //         }
-    //     });
-    // }
-
-    // private void AutomationInfoChanged(object? sender, AutomationInfo scriptInfo)
-    // {
-    //     if (scriptInfo.AutomationId != Automation?.Id)
-    //     {
-    //         return;
-    //     }
-    //     InvokeAsync(StateHasChanged);
-    // }
-
-    private async Task OnBeforeInternalNavigation(LocationChangingContext context)
+    private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
     {
-        if (_unsavedData != await GetAutomationDataAsync())
+        InvokeAsync(async () =>
         {
-            var isConfirmed = await JS.InvokeAsync<bool>("confirm", "Changes are not saved. Are you sure you want to leave the page without saving changes?");
-
-            if (!isConfirmed)
+            if (automationHandler.AutomationHandler.Automation.Id < 0)
             {
-                context.PreventNavigation();
+                NavigationManager.NavigateTo("\\");
             }
+            else
+            {
+                await ReloadAutomationAsync(null);
+            }
+        });
+    }
+
+    private void AutomationInfoChanged(object? sender, AutomationStateInfo scriptInfo)
+    {
+        if (scriptInfo.AutomationId != Automation?.Id)
+        {
+            return;
         }
+        InvokeAsync(StateHasChanged);
     }
 
     void ClearLog()
@@ -226,10 +187,5 @@ else
             }
             InvokeAsync(StateHasChanged);
         }
-    }
-
-    Task SaveAutomationPropertiesToAutomationAsync()
-    {
-		return Task.CompletedTask;
     }
 }
