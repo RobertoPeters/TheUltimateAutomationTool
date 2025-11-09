@@ -89,7 +89,7 @@ public class FreeScriptHandler: IAutomationHandler
 
     private long _triggering = 0;
     private readonly object _triggerLock = new object();
-    private void RequestTriggerFlow()
+    private void RequestTriggerProcess()
     {
         var count = Interlocked.Read(ref _triggering);
         if (count < 3)
@@ -151,9 +151,11 @@ public class FreeScriptHandler: IAutomationHandler
                 }
                 else
                 {
-                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this);
+                    Guid id = Guid.NewGuid();
+                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id);
                     var engine = new ScriptEngineInfo()
                     {
+                        Id = id,
                         Engine = scriptEngine,
                         Automation = Automation
                     };
@@ -168,7 +170,7 @@ public class FreeScriptHandler: IAutomationHandler
                     {
                         engine.Engine.Execute(_automationProperties.Script);
                         RunningState = AutomationRunningState.Active;
-                        RequestTriggerFlow();
+                        RequestTriggerProcess();
                     }
                     catch (Exception e)
                     {
@@ -288,13 +290,13 @@ public class FreeScriptHandler: IAutomationHandler
 
     public Task Handle(List<VariableValueInfo> variableValueInfos)
     {
-        RequestTriggerFlow();
+        RequestTriggerProcess();
         return Task.CompletedTask;
     }
 
     public Task Handle(List<VariableInfo> variableInfos)
     {
-        RequestTriggerFlow();
+        RequestTriggerProcess();
         return Task.CompletedTask;
     }
 

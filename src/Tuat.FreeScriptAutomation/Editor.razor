@@ -7,9 +7,9 @@
 
 @if (ScriptEditorType != null)
 {
-	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Edit properties" />
-	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" />
-	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Restart" />
+ 	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Edit properties" Click="EditSettingsAsync" />
+	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" Click="SaveAsync" />
+	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Restart" Click="Restart" />
 	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
 		<RadzenSplitterPane Min="10px">
 			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
@@ -30,6 +30,15 @@
 	[Parameter]
 	public Type? ScriptEditorType { get; set; }
 
+	[Parameter]
+	public EventCallback OnRestart { get; set; }
+
+	[Parameter]
+	public EventCallback OnSave { get; set; }
+
+	[Parameter]
+	public EventCallback OnEditSettings { get; set; }
+
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
@@ -47,5 +56,25 @@
 		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", "85vh" }, { "ReadOnly", true } };
 		await base.OnInitializedAsync();
 	}
+
+	async Task EditSettingsAsync()
+	{
+		automationProperties.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		Automation.Data = System.Text.Json.JsonSerializer.Serialize(automationProperties);
+		await OnEditSettings.InvokeAsync();
+	}
+
+	void Restart()
+	{
+		OnRestart.InvokeAsync();
+	}
+
+	async Task SaveAsync()
+	{
+		automationProperties.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		Automation.Data = System.Text.Json.JsonSerializer.Serialize(automationProperties);
+		await OnSave.InvokeAsync();
+	}
+
 }
 

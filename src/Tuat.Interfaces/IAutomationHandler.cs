@@ -5,6 +5,7 @@ public interface IAutomationHandler : IDisposable
     Models.Automation Automation { get; }
     void TriggerProcess();
     void Start();
+    void Restart();
     Task AddLogAsync(string instanceId, object? logObject);
     Task UpdateAsync(Models.Automation automation);
     Task Handle(List<VariableValueInfo> variableValueInfos);

@@ -1,5 +1,6 @@
 ﻿using Acornima.Ast;
 using Jint;
+using Radzen.Blazor.Markdown;
 using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
@@ -16,7 +17,7 @@ public class JavaScriptEngine : IScriptEngine
     private IVariableService? _variableService;
     private IAutomationHandler? _automationHandler;
 
-    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler)
+    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId)
     {
         _clientService = clientService;
         _dataService = dataService;
@@ -25,7 +26,7 @@ public class JavaScriptEngine : IScriptEngine
         _engine = new();
         var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
         _engine.SetValue("system", systemMethods);
-
+        _engine.Execute(GetSystemScript(_clientService));
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
@@ -73,8 +74,17 @@ public class JavaScriptEngine : IScriptEngine
         return result.ToString();
     }
 
-    public string GetSystemScript(IClientService clientService)
+    public string GetSystemScript(IClientService clientService, Guid? instanceId = null)
     {
-        return SystemMethods.SystemScript();
+        var script = new StringBuilder();
+        script.AppendLine("var global = this");
+        script.AppendLine($"var instanceId = '{(instanceId ?? Guid.Empty).ToString()}'");
+        script.AppendLine();
+
+        script.AppendLine();
+        script.AppendLine(SystemMethods.SystemScript());
+        script.AppendLine();
+
+        return script.ToString();
     }
 }

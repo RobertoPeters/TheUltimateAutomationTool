@@ -8,8 +8,8 @@ public interface IScriptEngine : IDisposable
         public Type Type { get; set; } = null!;
     }
 
-    string GetSystemScript(IClientService clientService);
-    void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler);
+    string GetSystemScript(IClientService clientService, Guid? instanceId = null);
+    void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId);
     void CallVoidFunction(string functionName, List<FunctionParameter>? functionParameters = null);
     void Execute(string script);
     object? Evaluate(string script);
