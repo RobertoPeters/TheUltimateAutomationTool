@@ -93,7 +93,7 @@ else
 
     Type? ScriptEditorComponentType()
     {
-        return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
+        return string.IsNullOrWhiteSpace(Automation?.ScriptType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
     }
 
     async Task ReloadAutomationAsync(Automation? useAutomation)
@@ -105,7 +105,15 @@ else
     {
         AutomationHandler = AutomationService.GetAutomation(Id);
         Automation = AutomationHandler.Automation;
-        EditorPropertiesParameters = new Dictionary<string, object?>() { { "Automation", Automation }, { "Height", "85vh" }, { "ScriptEditorType", ScriptEditorComponentType() } };
+        EditorPropertiesParameters = new Dictionary<string, object?>() 
+        { 
+            { "Automation", Automation }, 
+            { "Height", "85vh" }, 
+            { "ScriptEditorType", ScriptEditorComponentType() }, 
+            { "OnRestart", new EventCallback(this, (Action)Restart) } ,
+            { "OnSave", new EventCallback(this, (Func<Task>)SaveAsync) },
+            { "OnEditSettings", new EventCallback(this, (Func<Task>)EditSettingsAsync) }
+        };
         UIEventRegistration.LogEntryAdded += LogEvent;
         UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
         UIEventRegistration.AutomationStateInfoChanged += AutomationInfoChanged;
@@ -117,6 +125,25 @@ else
         UIEventRegistration.AutomationStateInfoChanged -= AutomationInfoChanged;
         UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
         UIEventRegistration.LogEntryAdded -= LogEvent;
+    }
+
+    async Task EditSettingsAsync()
+    {
+        var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { dialog.Automation = Automation; });
+        if (sm != null)
+        {
+            await DataService.AddOrUpdateAutomationAsync(sm);
+        }
+    }
+
+    void Restart()
+    {
+        AutomationHandler.Restart();
+	}
+
+    async Task SaveAsync()
+    {
+        await DataService.AddOrUpdateAutomationAsync(Automation);
     }
 
     void LogEvent(object? sender, LogEntry logEntry)

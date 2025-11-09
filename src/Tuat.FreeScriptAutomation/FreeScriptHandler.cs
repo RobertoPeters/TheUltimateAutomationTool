@@ -151,9 +151,11 @@ public class FreeScriptHandler: IAutomationHandler
                 }
                 else
                 {
-                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this);
+                    Guid id = Guid.NewGuid();
+                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id);
                     var engine = new ScriptEngineInfo()
                     {
+                        Id = id,
                         Engine = scriptEngine,
                         Automation = Automation
                     };
