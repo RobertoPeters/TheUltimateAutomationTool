@@ -151,8 +151,13 @@ public class FreeScriptHandler: IAutomationHandler
                 }
                 else
                 {
+                    if (string.IsNullOrWhiteSpace(_automationProperties.Script))
+                    {
+                        _automationProperties.Script = scriptEngine.GetDeclareFunction("schedule", false);
+                    }
+
                     Guid id = Guid.NewGuid();
-                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id);
+                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id, _automationProperties.Script);
                     var engine = new ScriptEngineInfo()
                     {
                         Id = id,
@@ -160,11 +165,6 @@ public class FreeScriptHandler: IAutomationHandler
                         Automation = Automation
                     };
                     _engines.Add(engine);
-
-                    if (string.IsNullOrWhiteSpace(_automationProperties.Script))
-                    {
-                        _automationProperties.Script = engine.Engine.GetDeclareFunction("schedule", false);
-                    }
 
                     try
                     {
