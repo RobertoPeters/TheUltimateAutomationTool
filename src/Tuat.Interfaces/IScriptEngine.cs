@@ -6,9 +6,11 @@ public interface IScriptEngine : IDisposable
     {
         public string Name { get; set; } = null!;
         public Type Type { get; set; } = null!;
+        public bool Nullable { get; set; }
+        public object? Value { get; set; }
     }
 
-    string GetSystemScript(IClientService clientService, Guid? instanceId = null);
+    string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null);
     void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript);
     void CallVoidFunction(string functionName, List<FunctionParameter>? functionParameters = null);
     void Execute(string script);

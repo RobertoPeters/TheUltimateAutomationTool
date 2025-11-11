@@ -74,7 +74,7 @@ public class JavaScriptEngine : IScriptEngine
         return result.ToString();
     }
 
-    public string GetSystemScript(IClientService clientService, Guid? instanceId = null)
+    public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null)
     {
         var script = new StringBuilder();
         script.AppendLine("var global = this");

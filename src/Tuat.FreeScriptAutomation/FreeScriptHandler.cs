@@ -157,7 +157,6 @@ public class FreeScriptHandler: IAutomationHandler
                     }
 
                     Guid id = Guid.NewGuid();
-                    scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id, _automationProperties.Script);
                     var engine = new ScriptEngineInfo()
                     {
                         Id = id,
@@ -168,6 +167,7 @@ public class FreeScriptHandler: IAutomationHandler
 
                     try
                     {
+                        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id, _automationProperties.Script);
                         engine.Engine.Execute(_automationProperties.Script);
                         RunningState = AutomationRunningState.Active;
                         RequestTriggerProcess();
