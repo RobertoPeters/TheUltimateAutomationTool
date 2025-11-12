@@ -35,6 +35,9 @@ public class CSharpEngine : IScriptEngine
         var settingsPath = GetScriptAssemblyDirectory();
         var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
         var systemScript = GetSystemScript(_clientService, instanceId, additionalScript);
+        var scriptUniqueNamespace = $"TuatScript{Guid.NewGuid().ToString("N")}";
+        var scriptUniqueTypeName = $"ScriptContainer{Guid.NewGuid().ToString("N")}";
+        systemScript = systemScript.Replace("ScriptContainer", scriptUniqueTypeName).Replace("TuatScript", scriptUniqueNamespace);
 
         var syntaxTree = CSharpSyntaxTree.ParseText(systemScript);
         var assemblyName = $"{ScriptAssemblyNamePrefix}{instanceId.ToString("N")}.dll";
@@ -66,10 +69,13 @@ public class CSharpEngine : IScriptEngine
         }
 
         _context = new CollectibleAssemblyLoadContext();
-        _weakRef = new WeakReference(_context, trackResurrection: true);
-        var dynamicAssembly = _context.LoadFromAssemblyPath(assemblyFilePath);
-        _engineType = dynamicAssembly.GetType("Tuat.ScriptEngineCSharp.ScriptContainer")!;
+        _context.Unloading += _ => Console.WriteLine($"[Script] ALC unloading for {assemblyName}");
+        using var memoryStream = new MemoryStream(System.IO.File.ReadAllBytes(assemblyFilePath));
+        var dynamicAssembly = _context.LoadFromStream(memoryStream);
+        _weakRef = new WeakReference(_context, true);
+        _engineType = dynamicAssembly.GetType($"{scriptUniqueNamespace}.{scriptUniqueTypeName}")!;
         _engine = Activator.CreateInstance(_engineType, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { systemMethods, instanceId.ToString() }, null);
+        TryRemoveAssemblies();
     }
 
     private static string GetScriptAssemblyDirectory()
@@ -108,8 +114,8 @@ public class CSharpEngine : IScriptEngine
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
     {
-        var myMethod = _engineType!.GetMethod(functionName);
-        myMethod.Invoke(_engine, functionParameters?.Select(p => p.Value).ToArray()); //todo
+        var method = _engineType!.GetMethod(functionName);
+        method.Invoke(_engine, functionParameters?.Select(p => p.Value).ToArray()); //todo
     }
 
     public void Execute(string script)
@@ -125,25 +131,39 @@ public class CSharpEngine : IScriptEngine
 
     public void Dispose()
     {
-        if (_isInitialized)
+        if (!_isInitialized)
         {
-            _isInitialized = false;
-
-            _engine = null;
-            _engineType = null;
-            _context?.Unload();
-            _context = null;
-
-            for (int i = 0; _weakRef?.IsAlive == true && (i < 10); i++)
-            {
-#pragma warning disable S1215 // "GC.Collect" should not be called
-                GC.Collect();
-#pragma warning restore S1215 // "GC.Collect" should not be called
-                GC.WaitForPendingFinalizers();
-            }
-            _weakRef = null;
-            TryRemoveAssemblies();
+            return;
         }
+
+        _isInitialized = false;
+
+        try
+        {
+            // Call script-side cleanup if it exposes a method (pattern-based)
+            var disposable = _engine as IDisposable;
+            disposable?.Dispose();
+        }
+        catch { /* swallow script errors during cleanup */ }
+
+        _engine = null;
+        _engineType = null;
+
+        var localContext = _context;
+        _context = null;
+
+        localContext?.Unload();
+
+#pragma warning disable S1215 // "GC.Collect" should not be called
+        GC.Collect();
+        for (int i = 0; _weakRef?.IsAlive == true && (i < 10); i++)
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+        }
+#pragma warning restore S1215 // "GC.Collect" should not be called
+        _weakRef = null;
+        TryRemoveAssemblies();
     }
 
     public string GetDeclareFunction(string functionName, bool hasReturnValue, Type? returnValueType = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
@@ -165,10 +185,16 @@ public class CSharpEngine : IScriptEngine
     {
         var script = new StringBuilder();
         script.AppendLine($"using System;");
-        script.AppendLine($"namespace Tuat.ScriptEngineCSharp;");
-        script.AppendLine("public class ScriptContainer(Tuat.ScriptEngineCSharp.SystemMethods _systemMethods, string instanceId)");
+        script.AppendLine($"namespace TuatScript;");
+        script.AppendLine("public class ScriptContainer(Tuat.ScriptEngineCSharp.SystemMethods _systemMethods, string instanceId): IDisposable");
         script.AppendLine("{");
         script.AppendLine();
+        script.AppendLine(""""
+            public void Dispose()
+            {
+                _systemMethods = null;
+            }
+            """");
 
         script.AppendLine();
         script.AppendLine(SystemMethods.SystemScript());
