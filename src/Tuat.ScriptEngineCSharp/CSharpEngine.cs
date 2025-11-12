@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using System.ComponentModel;
 using System.Text;
+using System.Threading;
 using Tuat.Interfaces;
 
 namespace Tuat.ScriptEngineCSharp;
@@ -69,7 +70,7 @@ public class CSharpEngine : IScriptEngine
         }
 
         _context = new CollectibleAssemblyLoadContext();
-        _context.Unloading += _ => Console.WriteLine($"[Script] ALC unloading for {assemblyName}");
+        //_context.Unloading += _ => Console.WriteLine($"[Script] ALC unloading for {assemblyName}");
         using var memoryStream = new MemoryStream(System.IO.File.ReadAllBytes(assemblyFilePath));
         var dynamicAssembly = _context.LoadFromStream(memoryStream);
         _weakRef = new WeakReference(_context, true);
@@ -114,8 +115,8 @@ public class CSharpEngine : IScriptEngine
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
     {
-        var method = _engineType!.GetMethod(functionName);
-        method.Invoke(_engine, functionParameters?.Select(p => p.Value).ToArray()); //todo
+        var method = _engineType?.GetMethod(functionName);
+        method?.Invoke(_engine, functionParameters?.Select(p => p.Value).ToArray());
     }
 
     public void Execute(string script)
@@ -146,20 +147,35 @@ public class CSharpEngine : IScriptEngine
         }
         catch { /* swallow script errors during cleanup */ }
 
+        // Clear references to the dynamically loaded instance and type first
         _engine = null;
         _engineType = null;
-
         var localContext = _context;
         _context = null;
 
-        localContext?.Unload();
-
+        // Force an initial GC to collect the engine instance before unloading
 #pragma warning disable S1215 // "GC.Collect" should not be called
-        GC.Collect();
-        for (int i = 0; _weakRef?.IsAlive == true && (i < 10); i++)
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+ #pragma warning restore S1215 // "GC.Collect" should not be called
+
+        // Now unload the context - this marks it for unloading
+        localContext?.Unload();
+        localContext = null;
+
+        // The WeakReference tracks the context, but the context won't be collected
+        // until all assemblies it loaded are unloaded. We need to wait for the
+        // assembly unloading to complete, not just the context collection.
+#pragma warning disable S1215 // "GC.Collect" should not be called
+        for (int i = 0; _weakRef?.IsAlive == true && (i < 100); i++)
         {
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
+            // Small delay to allow async unloading to progress
+            if (i > 0 && _weakRef?.IsAlive == true)
+            {
+                Thread.Sleep(10);
+            }
         }
 #pragma warning restore S1215 // "GC.Collect" should not be called
         _weakRef = null;

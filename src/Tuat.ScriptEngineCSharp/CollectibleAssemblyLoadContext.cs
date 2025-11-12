@@ -9,8 +9,17 @@ public class CollectibleAssemblyLoadContext : AssemblyLoadContext
     {
     }
 
-    protected override Assembly Load(AssemblyName assemblyName)
-    {
-        return base.Load(assemblyName);
-    }
+    //protected override Assembly? Load(AssemblyName name)
+    //{
+    //    if (name.Name == "Tuat.ScriptEngineCSharp")
+    //    {
+    //        return LoadFromAssemblyPath(typeof(SystemMethods).Assembly.Location);
+    //    }
+    //    else if (System.IO.File.Exists(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, $"{name.Name}.dll")))
+    //    {
+    //        return LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, $"{name.Name}.dll"));
+    //    }
+
+    //    return null;
+    //}
 }
