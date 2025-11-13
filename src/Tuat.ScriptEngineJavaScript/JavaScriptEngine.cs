@@ -4,6 +4,7 @@ using Radzen.Blazor.Markdown;
 using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
+using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineJavaScript;
 
@@ -57,7 +58,7 @@ public class JavaScriptEngine : IScriptEngine
         _engine = null;
     }
 
-    public string GetDeclareFunction(string functionName, bool hasReturnValue, Type? returnValueType = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
+    public string GetDeclareFunction(string functionName, FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
         var result = new StringBuilder();
         result.Append($"function {functionName}(");

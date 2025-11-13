@@ -50,7 +50,7 @@
 		using var scriptEngine = FreeScriptHandler.GetScriptEngine(Automation.ScriptType);
 		if (string.IsNullOrWhiteSpace(Automation.Data))
 		{
-			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", false) ?? "";
+			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
 		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", "85vh" } };
 		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", "85vh" }, { "ReadOnly", true } };

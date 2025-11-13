@@ -1,9 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
 using System.Text;
-using System.Threading;
 using Tuat.Interfaces;
+using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineCSharp;
 
@@ -11,112 +11,39 @@ namespace Tuat.ScriptEngineCSharp;
 [Editor("Tuat.ScriptEngineCSharp.Editor", typeof(Editor))]
 public class CSharpEngine : IScriptEngine
 {
-    private IClientService? _clientService;
-    private IDataService? _dataService;
-    private IVariableService? _variableService;
-    private IAutomationHandler? _automationHandler;
-
-    private Type? _engineType;
-    private object? _engine;
-    private CollectibleAssemblyLoadContext? _context;
-    private WeakReference? _weakRef;
-    private bool _isInitialized = false;
+    DynamicScriptApi scriptApi = new();
+    Dictionary<string, (FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
     {
-        _isInitialized = true;
-
-        _clientService = clientService;
-        _dataService = dataService;
-        _variableService = variableService;
-        _automationHandler = automationHandler;
-
-        TryRemoveAssemblies();
-
-        var settingsPath = GetScriptAssemblyDirectory();
-        var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
-        var systemScript = GetSystemScript(_clientService, instanceId, additionalScript);
-        var scriptUniqueNamespace = $"TuatScript{Guid.NewGuid().ToString("N")}";
-        var scriptUniqueTypeName = $"ScriptContainer{Guid.NewGuid().ToString("N")}";
-        systemScript = systemScript.Replace("ScriptContainer", scriptUniqueTypeName).Replace("TuatScript", scriptUniqueNamespace);
-
-        var syntaxTree = CSharpSyntaxTree.ParseText(systemScript);
-        var assemblyName = $"{ScriptAssemblyNamePrefix}{instanceId.ToString("N")}.dll";
-        var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
-        var references = new MetadataReference[]
+        additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
+        var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler);
+        scriptApi._systemMethods = systemMethods;
+        var systemScript = GetSystemScript(clientService, instanceId, additionalScript);
+        try
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(Path.Combine(assemblyPath!, "System.Runtime.dll")),
-            MetadataReference.CreateFromFile(typeof(IScriptEngine).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(SystemMethods).Assembly.Location),
-        };
-        var compilation = CSharpCompilation.Create(
-            assemblyName,
-            syntaxTrees: new[] { syntaxTree },
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)); // Create a DLL
-        var assemblyFilePath = Path.Combine(settingsPath!, assemblyName);
-        var result = compilation.Emit(assemblyFilePath);
-        if (!result.Success)
-        {
-            TryRemoveAssemblies();
+            var options = ScriptOptions.Default
+                .AddReferences(typeof(DynamicScriptApi).Assembly)
+                .AddImports("System", "System.Collections.Generic");
 
-            var errorText = new StringBuilder();
-            result.Diagnostics.Where(x => x.WarningLevel == (int)DiagnosticSeverity.Error).ToList().ForEach(diagnostic =>
-            {
-                errorText.AppendLine($"{diagnostic.Id}: {diagnostic.GetMessage()}");
-            });
-            throw new Exception($"Script compilation failed: {errorText}");
+            var scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
         }
-
-        _context = new CollectibleAssemblyLoadContext();
-        //_context.Unloading += _ => Console.WriteLine($"[Script] ALC unloading for {assemblyName}");
-        using var memoryStream = new MemoryStream(System.IO.File.ReadAllBytes(assemblyFilePath));
-        var dynamicAssembly = _context.LoadFromStream(memoryStream);
-        _weakRef = new WeakReference(_context, true);
-        _engineType = dynamicAssembly.GetType($"{scriptUniqueNamespace}.{scriptUniqueTypeName}")!;
-        _engine = Activator.CreateInstance(_engineType, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { systemMethods, instanceId.ToString() }, null);
-        TryRemoveAssemblies();
-    }
-
-    private static string GetScriptAssemblyDirectory()
-    {
-        var result = Path.GetDirectoryName(typeof(CSharpEngine).Assembly.Location);
-        while (result != null)
+        catch (Exception ex)
         {
-            if (Directory.Exists(Path.Combine(result, "Settings")))
-            {
-                break;
-            }
-            result = Directory.GetParent(result)?.FullName;
-        }
-        result = Path.Combine(result!, "Settings");
-        return result;
-    }
-
-    private string ScriptAssemblyNamePrefix => $"CSharp_{_automationHandler?.Automation.Id}_";
-
-    private void TryRemoveAssemblies()
-    {
-        var settingsPath = GetScriptAssemblyDirectory();
-        var files = Directory.GetFiles(settingsPath, $"{ScriptAssemblyNamePrefix}*.dll");
-        foreach (var file in files)
-        {
-            try
-            {
-                System.IO.File.Delete(file);
-            }
-            catch
-            {
-                //nothing
-            }
+            Console.WriteLine($"Fout bij compileren script: {ex.Message}");
+            return;
         }
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
     {
-        var method = _engineType?.GetMethod(functionName);
-        method?.Invoke(_engine, functionParameters?.Select(p => p.Value).ToArray());
+        var methodProtoType = scriptMethodProtoTypes[functionName];
+        var scriptMethod = scriptApi.Methods[functionName];
+        if (methodProtoType.functionParameters?.Any() != true)
+        {
+            var action = (Action)scriptMethod;
+            action();
+        }
     }
 
     public void Execute(string script)
@@ -132,60 +59,14 @@ public class CSharpEngine : IScriptEngine
 
     public void Dispose()
     {
-        if (!_isInitialized)
-        {
-            return;
-        }
-
-        _isInitialized = false;
-
-        try
-        {
-            // Call script-side cleanup if it exposes a method (pattern-based)
-            var disposable = _engine as IDisposable;
-            disposable?.Dispose();
-        }
-        catch { /* swallow script errors during cleanup */ }
-
-        // Clear references to the dynamically loaded instance and type first
-        _engine = null;
-        _engineType = null;
-        var localContext = _context;
-        _context = null;
-
-        // Force an initial GC to collect the engine instance before unloading
-#pragma warning disable S1215 // "GC.Collect" should not be called
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-        GC.WaitForPendingFinalizers();
- #pragma warning restore S1215 // "GC.Collect" should not be called
-
-        // Now unload the context - this marks it for unloading
-        localContext?.Unload();
-        localContext = null;
-
-        // The WeakReference tracks the context, but the context won't be collected
-        // until all assemblies it loaded are unloaded. We need to wait for the
-        // assembly unloading to complete, not just the context collection.
-#pragma warning disable S1215 // "GC.Collect" should not be called
-        for (int i = 0; _weakRef?.IsAlive == true && (i < 100); i++)
-        {
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-            GC.WaitForPendingFinalizers();
-            // Small delay to allow async unloading to progress
-            if (i > 0 && _weakRef?.IsAlive == true)
-            {
-                Thread.Sleep(10);
-            }
-        }
-#pragma warning restore S1215 // "GC.Collect" should not be called
-        _weakRef = null;
-        TryRemoveAssemblies();
     }
 
-    public string GetDeclareFunction(string functionName, bool hasReturnValue, Type? returnValueType = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
+    public string GetDeclareFunction(string functionName, FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
+        scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
+
         var result = new StringBuilder();
-        result.Append($"public void {functionName}("); //todo return type
+        result.Append($"void {functionName}("); //todo return type
         //todo
         result.AppendLine(")");
         result.AppendLine("{");
@@ -197,30 +78,33 @@ public class CSharpEngine : IScriptEngine
         return result.ToString();
     }
 
+    private string GetUserMethodsMapping()
+    {
+        var script = new StringBuilder();
+        foreach (var methodProtoType in scriptMethodProtoTypes)
+        {
+            if (methodProtoType.Value.functionParameters?.Any() != true)
+            {
+                if (methodProtoType.Value.returnValue == null)
+                {
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Action){methodProtoType.Key};""");
+                }
+            }
+        }
+        return script.ToString();
+    }
+
     public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null)
     {
         var script = new StringBuilder();
-        script.AppendLine($"using System;");
-        script.AppendLine($"namespace TuatScript;");
-        script.AppendLine("public class ScriptContainer(Tuat.ScriptEngineCSharp.SystemMethods _systemMethods, string instanceId): IDisposable");
-        script.AppendLine("{");
-        script.AppendLine();
-        script.AppendLine(""""
-            public void Dispose()
-            {
-                _systemMethods = null;
-            }
-            """");
-
-        script.AppendLine();
         script.AppendLine(SystemMethods.SystemScript());
+        script.AppendLine();
+        script.AppendLine($""""var instanceId = "{(instanceId ?? Guid.Empty).ToString()}"; """");
         script.AppendLine();
         if (!string.IsNullOrEmpty(additionalScript))
         {
             script.AppendLine(additionalScript);
-            script.AppendLine();
         }
-        script.AppendLine("}");
 
         return script.ToString();
     }

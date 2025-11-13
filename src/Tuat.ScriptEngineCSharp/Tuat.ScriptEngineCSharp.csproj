@@ -8,6 +8,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
 		<PackageReference Include="Radzen.Blazor" />
 		<PackageReference Include="BlazorMonaco" />
 	</ItemGroup>

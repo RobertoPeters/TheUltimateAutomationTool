@@ -151,9 +151,10 @@ public class FreeScriptHandler: IAutomationHandler
                 }
                 else
                 {
+                    var scheduleFunctionDeclaration = scriptEngine.GetDeclareFunction("schedule", null);
                     if (string.IsNullOrWhiteSpace(_automationProperties.Script))
                     {
-                        _automationProperties.Script = scriptEngine.GetDeclareFunction("schedule", false);
+                        _automationProperties.Script = scheduleFunctionDeclaration;
                     }
 
                     Guid id = Guid.NewGuid();
