@@ -1,10 +1,6 @@
-﻿using Acornima.Ast;
-using Jint;
-using Radzen.Blazor.Markdown;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
-using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineJavaScript;
 
@@ -17,6 +13,7 @@ public class JavaScriptEngine : IScriptEngine
     private IDataService? _dataService;
     private IVariableService? _variableService;
     private IAutomationHandler? _automationHandler;
+    private int startOfCustomVariableIndex;
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
     {
@@ -25,9 +22,22 @@ public class JavaScriptEngine : IScriptEngine
         _variableService = variableService;
         _automationHandler = automationHandler;
         _engine = new();
+        startOfCustomVariableIndex = _engine.Global.GetOwnProperties().Count() + 2;
         var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
         _engine.SetValue("system", systemMethods);
-        _engine.Execute(GetSystemScript(_clientService));
+        _engine.Execute(GetSystemScript(_clientService, instanceId));
+        if (!string.IsNullOrWhiteSpace(additionalScript))
+        {
+            _engine.Execute(additionalScript);
+        }
+    }
+
+    public List<IScriptEngine.ScriptVariable> GetScriptVariables()
+    {
+        return _engine?.Global.GetOwnProperties().Skip(startOfCustomVariableIndex)
+            .Where(x => x.Value.Value.ToObject()?.ToString()?.StartsWith("System.Func") != true)
+            .Select(x => new IScriptEngine.ScriptVariable( x.Key.ToString(), x.Value.Value.ToObject()))
+            .ToList() ?? [];
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
@@ -58,7 +68,7 @@ public class JavaScriptEngine : IScriptEngine
         _engine = null;
     }
 
-    public string GetDeclareFunction(string functionName, FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
+    public string GetDeclareFunction(string functionName, IScriptEngine.FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
         var result = new StringBuilder();
         result.Append($"function {functionName}(");

@@ -169,7 +169,6 @@ public class FreeScriptHandler: IAutomationHandler
                     try
                     {
                         scriptEngine.Initialize(_clientService, _dataService, _variableService, this, id, _automationProperties.Script);
-                        engine.Engine.Execute(_automationProperties.Script);
                         RunningState = AutomationRunningState.Active;
                         RequestTriggerProcess();
                     }
@@ -232,7 +231,23 @@ public class FreeScriptHandler: IAutomationHandler
             autoResetEvent.Dispose();
         }
         return result;
+    }
 
+    public List<IScriptEngine.ScriptVariable> GetScriptVariables()
+    {
+        List<IScriptEngine.ScriptVariable> result;
+        lock (_lockEngineObject)
+        {
+            try
+            {
+                result = _engines[0].Engine.GetScriptVariables();
+            }
+            catch (Exception e)
+            {
+                result = [];
+            }
+        }
+        return result;
     }
 
     public void Restart()

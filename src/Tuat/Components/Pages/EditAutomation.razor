@@ -14,205 +14,249 @@
 
 @if (Automation != null)
 {
-    <span>Edit Automation: @Automation.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
-    @if (!string.IsNullOrWhiteSpace(AutomationHandler?.ErrorMessage))
-    {
-        <p>@AutomationHandler.ErrorMessage</p>
-    }
-    <RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
-        <RadzenSplitterPane Size="75%" Min="300px">
-            @if (!string.IsNullOrWhiteSpace(Automation.AutomationType))
-            {
-                <DynamicComponent @ref="automationEditor" Type="@(EditorComponentType())" Parameters="EditorPropertiesParameters" />
-            }
-        </RadzenSplitterPane>
-        <RadzenSplitterPane Min="100px">
-            <RadzenTabs>
-                <Tabs>
-                    <RadzenTabsItem Text="Variables">
-                        <VariablesControl Automation="Automation" AllowColumnPicking=false />
-                    </RadzenTabsItem>
-                    <RadzenTabsItem Text="Intermediate">
-                        <div style="position: relative;">
-                            <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-                                <RadzenButton Size="ButtonSize.Small" Text="Execute" Click="@ExecuteInteractive" Disabled="@(string.IsNullOrWhiteSpace(executeCommand) || AutomationHandler?.RunningState != AutomationRunningState.Active)" />
-                            </div>
-                            <RadzenTextArea @bind-Value=@executeCommand Style=@($"width:100%;") Rows="2" Placeholder="interactive javascript execution" />
-                            <div>
-                                <pre>@executeCommandResult</pre>
-                            </div>
-                        </div>
-                    </RadzenTabsItem>
-                    <RadzenTabsItem Text="Log">
-                        <div style="position: relative;">
-                            <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-                                <RadzenButton Size="ButtonSize.Small" Text="Clear" Click="@ClearLog" />
-                                <RadzenButton Size="ButtonSize.Small" Text="@(_pauseLog ? "Continue" : "Pause")" Click="@PauseLog" />
-                            </div>
-                            <div style="width: 100%;height: 150px;border: 1px solid black; overflow: scroll">
-                                @foreach (var data in logLines)
-                                {
-                                    <pre style="margin:0px;padding:0px;">@($"{data.Time.ToString("HH:mm.ss.fff")} {data.Message}")</pre>
-                                }
-                            </div>
-                        </div>
-                    </RadzenTabsItem>
-                </Tabs>
-            </RadzenTabs>
-        </RadzenSplitterPane>
-    </RadzenSplitter>
+	<span>Edit Automation: @Automation.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
+	@if (!string.IsNullOrWhiteSpace(AutomationHandler?.ErrorMessage))
+	{
+		<p>@AutomationHandler.ErrorMessage</p>
+	}
+	<RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
+		<RadzenSplitterPane Size="75%" Min="300px">
+			@if (!string.IsNullOrWhiteSpace(Automation.AutomationType))
+			{
+				<DynamicComponent @ref="automationEditor" Type="@(EditorComponentType())" Parameters="EditorPropertiesParameters" />
+			}
+		</RadzenSplitterPane>
+		<RadzenSplitterPane Min="100px">
+			<RadzenTabs>
+				<Tabs>
+					<RadzenTabsItem Text="Variables">
+						<VariablesControl Automation="Automation" AllowColumnPicking=false />
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Locals">
+						<RadzenDataGrid @ref="variablesGrid" 
+										AllowFiltering="true"
+										AllowColumnResize="true"
+										AllowAlternatingRows="false"
+										FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+										FilterMode="FilterMode.SimpleWithMenu"
+										AllowSorting="true"
+										PageSize="20"
+										Density="Density.Compact"
+										AllowPaging="true"
+										AllowVirtualization="true"
+										PagerHorizontalAlign="HorizontalAlign.Left"
+										ShowPagingSummary="true"
+										Data="scriptVariables">
+							<Columns>
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Name)" Title="Name" />
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Value)" Title="Type" Filterable="false">
+									<Template Context="variable">
+										@(variable.Value?.GetType())
+									</Template>
+								</RadzenDataGridColumn>
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Value)" Title="Value" Filterable="false" />
+							</Columns>
+						</RadzenDataGrid>
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Intermediate">
+						<div style="position: relative;">
+							<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+								<RadzenButton Size="ButtonSize.Small" Text="Execute" Click="@ExecuteInteractive" Disabled="@(string.IsNullOrWhiteSpace(executeCommand) || AutomationHandler?.RunningState != AutomationRunningState.Active)" />
+							</div>
+							<RadzenTextArea @bind-Value=@executeCommand Style=@($"width:100%;") Rows="2" Placeholder="interactive script execution" />
+							<div>
+								<pre>@executeCommandResult</pre>
+							</div>
+						</div>
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Log">
+						<div style="position: relative;">
+							<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+								<RadzenButton Size="ButtonSize.Small" Text="Clear" Click="@ClearLog" />
+								<RadzenButton Size="ButtonSize.Small" Text="@(_pauseLog ? "Continue" : "Pause")" Click="@PauseLog" />
+							</div>
+							<div style="width: 100%;height: 150px;border: 1px solid black; overflow: scroll">
+								@foreach (var data in logLines)
+								{
+									<pre style="margin:0px;padding:0px;">@($"{data.Time.ToString("HH:mm.ss.fff")} {data.Message}")</pre>
+								}
+							</div>
+						</div>
+					</RadzenTabsItem>
+				</Tabs>
+			</RadzenTabs>
+		</RadzenSplitterPane>
+	</RadzenSplitter>
 }
 else
 {
-    <h2>Edit Script</h2>
+	<h2>Edit Script</h2>
 }
 
 @code {
-    [Parameter]
-    public int Id { get; set; }
+	[Parameter]
+	public int Id { get; set; }
 
-    private sealed class LogData
-    {
-        public string Message { get; set; } = string.Empty;
-        public DateTime Time { get; set; } = DateTime.Now;
-    }
-
-    private Automation Automation = null!;
-    private IAutomationHandler AutomationHandler = null!;
-    private readonly List<LogData> logLines = [];
-    private string? executeCommand;
-    private string? executeCommandResult;
-    private bool _pauseLog;
-    private DynamicComponent? automationEditor;
-    Dictionary<string, object?>? EditorPropertiesParameters;
-
-    Type? EditorComponentType()
-    {
-        return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Automation.AutomationType).EditorComponentType;
-    }
-
-    Type? ScriptEditorComponentType()
-    {
-        return string.IsNullOrWhiteSpace(Automation?.ScriptType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
-    }
-
-    async Task ReloadAutomationAsync(Automation? useAutomation)
-    {
-        Automation = useAutomation ?? AutomationHandler.Automation;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        AutomationHandler = AutomationService.GetAutomation(Id);
-        Automation = AutomationHandler.Automation;
-        EditorPropertiesParameters = new Dictionary<string, object?>() 
-        { 
-            { "Automation", Automation }, 
-            { "Height", "85vh" }, 
-            { "ScriptEditorType", ScriptEditorComponentType() }, 
-            { "OnRestart", new EventCallback(this, (Action)Restart) } ,
-            { "OnSave", new EventCallback(this, (Func<Task>)SaveAsync) },
-            { "OnEditSettings", new EventCallback(this, (Func<Task>)EditSettingsAsync) }
-        };
-        UIEventRegistration.LogEntryAdded += LogEvent;
-        UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
-        UIEventRegistration.AutomationStateInfoChanged += AutomationInfoChanged;
-        await base.OnInitializedAsync();
-    }
-
-    public void Dispose()
-    {
-        UIEventRegistration.AutomationStateInfoChanged -= AutomationInfoChanged;
-        UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
-        UIEventRegistration.LogEntryAdded -= LogEvent;
-    }
-
-    async Task EditSettingsAsync()
-    {
-        var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { dialog.Automation = Automation; });
-        if (sm != null)
-        {
-            await DataService.AddOrUpdateAutomationAsync(sm);
-        }
-    }
-
-    void Restart()
-    {
-        AutomationHandler.Restart();
+	private sealed class LogData
+	{
+		public string Message { get; set; } = string.Empty;
+		public DateTime Time { get; set; } = DateTime.Now;
 	}
 
-    async Task SaveAsync()
-    {
-        await DataService.AddOrUpdateAutomationAsync(Automation);
-    }
+	private Automation Automation = null!;
+	private IAutomationHandler AutomationHandler = null!;
+	private readonly List<LogData> logLines = [];
+	private string? executeCommand;
+	private string? executeCommandResult;
+	private bool _pauseLog;
+	private DynamicComponent? automationEditor;
+	private RadzenDataGrid<IScriptEngine.ScriptVariable>? variablesGrid;
+	Dictionary<string, object?>? EditorPropertiesParameters;
+	private List<IScriptEngine.ScriptVariable> scriptVariables = new();
 
-    void LogEvent(object? sender, LogEntry logEntry)
-    {
-        if (_pauseLog || logEntry.AutomationId != Automation?.Id) return;
+	Type? EditorComponentType()
+	{
+		return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Automation.AutomationType).EditorComponentType;
+	}
 
-        InvokeAsync(() =>
-        {
-            logLines.Add(new LogData() { Message = logEntry.Message, Time = logEntry.Timestamp.ToLocalTime() });
-            while (logLines.Count > 200)
-            {
-                logLines.RemoveAt(0);
-            }
-            StateHasChanged();
-        });
-    }
+	Type? ScriptEditorComponentType()
+	{
+		return string.IsNullOrWhiteSpace(Automation?.ScriptType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
+	}
 
-    private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
-    {
-        InvokeAsync(async () =>
-        {
-            if (automationHandler.AutomationHandler.Automation.Id < 0)
-            {
-                NavigationManager.NavigateTo("\\");
-            }
-            else
-            {
-                await ReloadAutomationAsync(null);
-            }
-        });
-    }
+	async Task ReloadAutomationAsync(Automation? useAutomation)
+	{
+		Automation = useAutomation ?? AutomationHandler.Automation;
+	}
 
-    private void AutomationInfoChanged(object? sender, AutomationStateInfo scriptInfo)
-    {
-        if (scriptInfo.AutomationId != Automation?.Id)
-        {
-            return;
-        }
-        InvokeAsync(StateHasChanged);
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		AutomationHandler = AutomationService.GetAutomation(Id);
+		Automation = AutomationHandler.Automation;
+		EditorPropertiesParameters = new Dictionary<string, object?>()
+		{
+			{ "Automation", Automation },
+			{ "Height", "85vh" },
+			{ "ScriptEditorType", ScriptEditorComponentType() },
+			{ "OnRestart", new EventCallback(this, (Action)Restart) } ,
+			{ "OnSave", new EventCallback(this, (Func<Task>)SaveAsync) },
+			{ "OnEditSettings", new EventCallback(this, (Func<Task>)EditSettingsAsync) }
+		};
+		UIEventRegistration.LogEntryAdded += LogEvent;
+		UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
+		UIEventRegistration.AutomationStateInfoChanged += AutomationInfoChanged;
+		UIEventRegistration.AutomationTriggered += AutomationHasTriggered;
+		scriptVariables = AutomationHandler.GetScriptVariables();
+		await base.OnInitializedAsync();
+	}
 
-    void ClearLog()
-    {
-        InvokeAsync(() =>
-    {
-        logLines.Clear();
-        StateHasChanged();
-    });
-    }
+	public void Dispose()
+	{
+		UIEventRegistration.AutomationTriggered -= AutomationHasTriggered;
+		UIEventRegistration.AutomationStateInfoChanged -= AutomationInfoChanged;
+		UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
+		UIEventRegistration.LogEntryAdded -= LogEvent;
+	}
 
-    void PauseLog()
-    {
-        _pauseLog = !_pauseLog;
-    }
+	async Task EditSettingsAsync()
+	{
+		var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { dialog.Automation = Automation; });
+		if (sm != null)
+		{
+			await DataService.AddOrUpdateAutomationAsync(sm);
+		}
+	}
 
-    void ExecuteInteractive()
-    {
-        if (!string.IsNullOrWhiteSpace(executeCommand))
-        {
-            executeCommandResult = null;
-            if (AutomationHandler?.RunningState == AutomationRunningState.Active)
-            {
-                executeCommandResult = AutomationHandler.ExecuteScript(executeCommand);
-            }
-            else
-            {
-                executeCommandResult = "error: script not active";
-            }
-            InvokeAsync(StateHasChanged);
-        }
-    }
+	void AutomationHasTriggered(object? sender, AutomationTriggered triggerInfo)
+	{
+		if (_pauseLog || triggerInfo.AutomationId != Automation?.Id) return;
+
+		InvokeAsync(() =>
+		{
+			scriptVariables = AutomationHandler.GetScriptVariables();
+			variablesGrid?.Reload();
+			StateHasChanged();
+		});
+
+	}
+
+	void Restart()
+	{
+		AutomationHandler.Restart();
+	}
+
+	async Task SaveAsync()
+	{
+		await DataService.AddOrUpdateAutomationAsync(Automation);
+	}
+
+	void LogEvent(object? sender, LogEntry logEntry)
+	{
+		if (_pauseLog || logEntry.AutomationId != Automation?.Id) return;
+
+		InvokeAsync(() =>
+		{
+			logLines.Add(new LogData() { Message = logEntry.Message, Time = logEntry.Timestamp.ToLocalTime() });
+			while (logLines.Count > 200)
+			{
+				logLines.RemoveAt(0);
+			}
+			StateHasChanged();
+		});
+	}
+
+	private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
+	{
+		InvokeAsync(async () =>
+		{
+			if (automationHandler.AutomationHandler.Automation.Id < 0)
+			{
+				NavigationManager.NavigateTo("\\");
+			}
+			else
+			{
+				await ReloadAutomationAsync(null);
+			}
+		});
+	}
+
+	private void AutomationInfoChanged(object? sender, AutomationStateInfo scriptInfo)
+	{
+		if (scriptInfo.AutomationId != Automation?.Id)
+		{
+			return;
+		}
+		InvokeAsync(StateHasChanged);
+	}
+
+	void ClearLog()
+	{
+		InvokeAsync(() =>
+	{
+		logLines.Clear();
+		StateHasChanged();
+	});
+	}
+
+	void PauseLog()
+	{
+		_pauseLog = !_pauseLog;
+	}
+
+	void ExecuteInteractive()
+	{
+		if (!string.IsNullOrWhiteSpace(executeCommand))
+		{
+			executeCommandResult = null;
+			if (AutomationHandler?.RunningState == AutomationRunningState.Active)
+			{
+				executeCommandResult = AutomationHandler.ExecuteScript(executeCommand);
+			}
+			else
+			{
+				executeCommandResult = "error: script not active";
+			}
+			InvokeAsync(StateHasChanged);
+		}
+	}
 }

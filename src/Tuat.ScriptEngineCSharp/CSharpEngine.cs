@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
-using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineCSharp;
 
@@ -12,7 +11,8 @@ namespace Tuat.ScriptEngineCSharp;
 public class CSharpEngine : IScriptEngine
 {
     DynamicScriptApi scriptApi = new();
-    Dictionary<string, (FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
+    ScriptState<object>? scriptState;
+    Dictionary<string, (IScriptEngine.FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
     {
@@ -26,13 +26,18 @@ public class CSharpEngine : IScriptEngine
                 .AddReferences(typeof(DynamicScriptApi).Assembly)
                 .AddImports("System", "System.Collections.Generic");
 
-            var scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
+            scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Fout bij compileren script: {ex.Message}");
+            Console.WriteLine($"Error compiling script: {ex.Message}");
             return;
         }
+    }
+
+    public List<IScriptEngine.ScriptVariable> GetScriptVariables()
+    {
+        return scriptState?.Variables.Select(x => new IScriptEngine.ScriptVariable(x.Name, x.Value)).ToList() ?? [];
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
@@ -61,7 +66,7 @@ public class CSharpEngine : IScriptEngine
     {
     }
 
-    public string GetDeclareFunction(string functionName, FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
+    public string GetDeclareFunction(string functionName, IScriptEngine.FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
         scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
 

@@ -13,5 +13,5 @@ public interface IAutomationHandler : IDisposable
     string? ExecuteScript(string script);
     string? ErrorMessage { get; }
     AutomationRunningState RunningState { get; }
-
+    List<IScriptEngine.ScriptVariable> GetScriptVariables();
 }
