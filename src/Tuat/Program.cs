@@ -97,15 +97,18 @@ var t = new Thread(new ThreadStart(
             await dataService.AddOrUpdateClientAsync(genericClient);
         }
 
-        //var timerClient = new Tuat.Models.Client()
-        //{
-        //    Id = 2,
-        //    Name = "Timer",
-        //    Enabled = true,
-        //    ClientType = ClientType.Timer,
-        //    Data = ""
-        //};
-
+        if (!clients.Any(x => x.Name == "Timer"))
+        {
+            var genericClient = new Tuat.Models.Client()
+            {
+                Id = 0,
+                Name = "Timer",
+                Enabled = true,
+                ClientType = typeof(Tuat.TimerClient.TimerClientHandler).FullName!,
+                Settings = ""
+            };
+            await dataService.AddOrUpdateClientAsync(genericClient);
+        }
 
         _pipelineReady = true;
     }));

@@ -41,6 +41,7 @@
 		<ProjectReference Include="..\Tuat.Repository\Tuat.Repository.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineCSharp\Tuat.ScriptEngineCSharp.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineJavaScript\Tuat.ScriptEngineJavaScript.csproj" />
+		<ProjectReference Include="..\Tuat.TimerClient\Tuat.TimerClient.csproj" />
 		<ProjectReference Include="..\Tuat.Variables\Tuat.Variables.csproj" />
 	</ItemGroup>
 	

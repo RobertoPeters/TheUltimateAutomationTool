@@ -18,6 +18,7 @@
   <Project Path="Tuat.Repository/Tuat.Repository.csproj" Id="d15750c9-9b5c-4128-90ce-1cc915371fbf" />
   <Project Path="Tuat.ScriptEngineCSharp/Tuat.ScriptEngineCSharp.csproj" Id="22971be8-4143-4c4a-9391-b251f2610906" />
   <Project Path="Tuat.ScriptEngineJavaScript/Tuat.ScriptEngineJavaScript.csproj" Id="23a37bae-aca7-4c77-8f98-7e908015e59f" />
+  <Project Path="Tuat.TimerClient/Tuat.TimerClient.csproj" Id="421fba45-55b9-45e5-b293-fa02ed3c3840" />
   <Project Path="Tuat.Variables/Tuat.Variables.csproj" Id="6376404f-5413-484b-88bd-fae19a2b83aa" />
   <Project Path="Tuat/Tuat.csproj" />
 </Solution>
