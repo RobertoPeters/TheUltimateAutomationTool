@@ -12,6 +12,12 @@ public class GenericClientHandler(Client _client, IVariableService _variableServ
 {
     public Client Client => _client;
 
+    public List<(string methodName, bool isAutomationVariable, bool persistant, string description, string example)> CreateVariableOnClientMethods() => 
+        [
+            ("CreateVariable", true, false, "Create a non persistant automation variable with data as default value. Return value is id of variable", "CreateVariable(\"testVar\")"),
+        ];
+
+    public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() => [];
     public Task AddOrUpdateVariableInfoAsync(List<VariableInfo> variables)
     {
         return Task.CompletedTask;

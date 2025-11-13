@@ -10,7 +10,7 @@
     <RadzenStack>
         <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
             <ChildContent>
-                <RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
+                <RadzenTextBox @bind-Value="@Model.Name" Name="Name" spellcheck="false" />
             </ChildContent>
             <Helper>
                 <RadzenRequiredValidator Component="Name" Text="This field is required" />
@@ -18,7 +18,7 @@
         </RadzenFormField>
         <RadzenFormField Text="Type *" Variant="@Variant.Outlined">
             <ChildContent>
-                <RadzenDropDown Data="Tuat.Generic.AutomationTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.AutomationType" Name="AutomationType" Disabled=@(Model!.Id != 0) />
+                <RadzenDropDown Data="Tuat.Generic.AutomationTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model.AutomationType" Name="AutomationType" Disabled=@(Model.Id != 0) />
             </ChildContent>
             <Helper>
                 <RadzenRequiredValidator Component="AutomationType" Text="This field is required" />
@@ -26,13 +26,21 @@
         </RadzenFormField>
         <RadzenFormField Text="Script language *" Variant="@Variant.Outlined">
             <ChildContent>
-                <RadzenDropDown Data="Tuat.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.ScriptType" Name="ScriptType" Disabled=@(Model!.Id != 0) />
+                <RadzenDropDown Data="Tuat.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model.ScriptType" Name="ScriptType" Disabled=@(Model.Id != 0) />
             </ChildContent>
             <Helper>
                 <RadzenRequiredValidator Component="ScriptType" Text="This field is required" />
             </Helper>
         </RadzenFormField>
-        @if (!Model!.IsSubAutomation)
+        <RadzenFormField Text="Sub Automation" Variant="@Variant.Outlined">
+            <RadzenRadioButtonList @bind-Value="@Model.IsSubAutomation" TValue="bool" class="rz-m-4 rz-mt-8">
+                <Items>
+                    <RadzenRadioButtonListItem Text="Yes" Value="true" />
+                    <RadzenRadioButtonListItem Text="No" Value="false" />
+                </Items>
+            </RadzenRadioButtonList>
+        </RadzenFormField>
+        @if (!Model.IsSubAutomation)
         {
             <RadzenFormField Text="Enabled" Variant="@Variant.Outlined">
                 <RadzenRadioButtonList @bind-Value="@Model.Enabled" TValue="bool" class="rz-m-4 rz-mt-8">
@@ -61,7 +69,7 @@
     [Parameter]
     public Automation? Automation { get; set; }
 
-    private Automation? Model;
+    private Automation Model = new();
     private RadzenTemplateForm<Automation>? Form;
     private DynamicComponent? settingsProperties;
     Dictionary<string, object?>? SettingsPropertiesParameters;

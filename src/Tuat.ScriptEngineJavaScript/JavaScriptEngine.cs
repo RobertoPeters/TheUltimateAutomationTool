@@ -96,6 +96,46 @@ public class JavaScriptEngine : IScriptEngine
         script.AppendLine(SystemMethods.SystemScript());
         script.AppendLine();
 
+        var clients = clientService.GetClients();
+        List<string> clientTypesHandled = [];
+        foreach (var client in clients)
+        {
+            if (clientTypesHandled.Contains(client.Client.ClientType))
+            {
+                continue;
+            }
+
+            var createVariableMethods = client.CreateVariableOnClientMethods();
+            var createExecuteMethods = client.CreateExecuteOnClientMethods();
+            if (createVariableMethods.Any() || createExecuteMethods.Any())
+            {
+                script.AppendLine("//===================================================");
+                script.AppendLine($"// client helper methods for {client.Client.Name}");
+                script.AppendLine("//===================================================");
+
+                foreach (var method in createVariableMethods)
+                {
+                    script.AppendLine($"""//{method.description}""");
+                    script.AppendLine($"""//{method.example}""");
+                    script.AppendLine($"""{method.methodName} = function(name, data, mockingOptions, clientId)""");
+                    script.AppendLine("{");
+                    script.AppendLine($"  if (clientId == null) {{ clientId = {client.Client.Id} }}");
+                    script.AppendLine($"   return createVariableOnClient(name, clientId, {(method.isAutomationVariable ? "true" : "false")},  {(method.persistant ? "true" : "false")}, data, mockingOptions)");
+                    script.AppendLine("}");
+                }
+
+                foreach (var method in createExecuteMethods)
+                {
+                    script.AppendLine($"""//{method.description}""");
+                    script.AppendLine($"""//{method.example}""");
+                    script.AppendLine($"""{method.methodName} = function(variableId, parameter1, parameter2, parameter3, clientId)""");
+                    script.AppendLine("{");
+                    script.AppendLine($"  if (clientId == null) {{ clientId = {client.Client.Id} }}");
+                    script.AppendLine($"   return executeOnClient(clientId, variableId, '{method.command}', parameter1, parameter2, parameter3)");
+                    script.AppendLine("}");
+                }
+            }
+        }
         return script.ToString();
     }
 }

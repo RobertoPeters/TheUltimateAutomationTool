@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
 using Tuat.Interfaces;
 
@@ -16,6 +17,7 @@ public class CSharpEngine : IScriptEngine
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
     {
+        var totalScript = new StringBuilder();
         additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
         var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler);
         scriptApi._systemMethods = systemMethods;
@@ -109,6 +111,45 @@ public class CSharpEngine : IScriptEngine
         if (!string.IsNullOrEmpty(additionalScript))
         {
             script.AppendLine(additionalScript);
+        }
+
+        var clients = clientService.GetClients();
+        List<string> clientTypesHandled = [];
+        foreach (var client in clients)
+        {
+            if (clientTypesHandled.Contains(client.Client.ClientType))
+            {
+                continue;
+            }
+
+            var createVariableMethods = client.CreateVariableOnClientMethods();
+            var createExecuteMethods = client.CreateExecuteOnClientMethods();
+            if (createVariableMethods.Any() || createExecuteMethods.Any())
+            {
+                script.AppendLine("//===================================================");
+                script.AppendLine($"// client helper methods for {client.Client.Name}");
+                script.AppendLine("//===================================================");
+
+                foreach (var method in createVariableMethods)
+                {
+                    script.AppendLine($"""//{method.description}""");
+                    script.AppendLine($"""//{method.example}""");
+                    script.AppendLine($"""int {method.methodName}(string name, object? data = null, object[]? mockingOptions = null, int clientId = {client.Client.Id})""");
+                    script.AppendLine("{");
+                    script.AppendLine($"   return CreateVariableOnClient(name, clientId, {(method.isAutomationVariable ? "true" : "false")},  {(method.persistant ? "true" : "false")}, data, mockingOptions);");
+                    script.AppendLine("}");
+                }
+
+                foreach (var method in createExecuteMethods)
+                {
+                    script.AppendLine($"""//{method.description}""");
+                    script.AppendLine($"""//{method.example}""");
+                    script.AppendLine($"""bool {method.methodName}(int? variableId = null, object? parameter1 = null, object? parameter2 = null, object? parameter3 = null, int clientId = {client.Client.Id})""");
+                    script.AppendLine("{");
+                    script.AppendLine($"""   return ExecuteOnClient(clientId, variableId, "{method.command}", parameter1, parameter2, parameter3);""");
+                    script.AppendLine("}");
+                }
+            }
         }
 
         return script.ToString();

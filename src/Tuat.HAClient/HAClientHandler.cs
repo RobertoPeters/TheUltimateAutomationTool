@@ -31,6 +31,18 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
         await DisposeHassApiAsync();
     }
 
+    public List<(string methodName, bool isAutomationVariable, bool persistant, string description, string example)> CreateVariableOnClientMethods() =>
+        [       
+            ("createHAVariable", true, true, "Create a Home Assistent entity variable with data as entity name. Return value is id of variable", "createHAVariable('kitchenLight', 'light.my_light')"),
+        ];
+
+    public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() => 
+        [
+            ("haClientCallService", "callservice", "Call Home Assistent service.", """haClientCallService(null, 'light', 'turn_on', { "entity_id": "light.my_light", "brightness_pct": 20})")"""),
+            ("haClientCallServiceForEntities", "callserviceforentities", "Call Home Assistent service for entities.", """haClientCallService(null, 'light', 'turn_off', [ "light.my_light" ])")"""),
+        ];
+
+
     public async Task StartAsync()
     {
         await DisposeHassApiAsync();
