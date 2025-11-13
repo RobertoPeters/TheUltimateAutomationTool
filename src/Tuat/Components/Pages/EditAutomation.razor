@@ -1,4 +1,5 @@
 ﻿@page "/editautomation/{Id:int}"
+@using Tuat.Extensions
 @using Tuat.Models
 @using Tuat.Interfaces
 @inject IAutomationService AutomationService
@@ -126,13 +127,17 @@ else
 
 	async Task ReloadAutomationAsync(Automation? useAutomation)
 	{
-		Automation = useAutomation ?? AutomationHandler.Automation;
+		Automation = (useAutomation ?? AutomationHandler.Automation).CopyObject()!;
+		Automation.Id = Id;
+		scriptVariables = AutomationHandler.GetScriptVariables();
+		await ((IAutomationEditor)(automationEditor!.Instance!)).ReloadAutomationAsync(Automation);
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
 		AutomationHandler = AutomationService.GetAutomation(Id);
-		Automation = AutomationHandler.Automation;
+		Automation = AutomationHandler.Automation.CopyObject()!;
+		Automation.Id = Id;
 		EditorPropertiesParameters = new Dictionary<string, object?>()
 		{
 			{ "Automation", Automation },
@@ -163,7 +168,10 @@ else
 		var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { dialog.Automation = Automation; });
 		if (sm != null)
 		{
-			await DataService.AddOrUpdateAutomationAsync(sm);
+			Automation.Name = sm.Name;
+			Automation.Enabled = sm.Enabled;
+			Automation.IsSubAutomation = sm.IsSubAutomation;
+			Automation.Settings = sm.Settings;
 		}
 	}
 
@@ -187,6 +195,7 @@ else
 
 	async Task SaveAsync()
 	{
+		Automation.Data = await ((IAutomationEditor)(automationEditor!.Instance!)).GetAutomationDataAsync();
 		await DataService.AddOrUpdateAutomationAsync(Automation);
 	}
 
@@ -207,6 +216,8 @@ else
 
 	private void AutomationHandlerChanged(object? sender, AutomationHandlerInfo automationHandler)
 	{
+		if (automationHandler.AutomationHandler.Automation.Id != Automation?.Id) return;
+
 		InvokeAsync(async () =>
 		{
 			if (automationHandler.AutomationHandler.Automation.Id < 0)

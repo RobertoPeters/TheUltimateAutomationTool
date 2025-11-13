@@ -43,5 +43,12 @@
 	{
 		return await standaloneCodeEditor!.GetValue();
 	}
+
+	public async Task SetScriptAsync(string? text)
+	{
+		Script = text ?? "";
+		await standaloneCodeEditor!.SetValue(Script);
+	}
+
 }
 

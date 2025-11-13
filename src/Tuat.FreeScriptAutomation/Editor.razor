@@ -57,11 +57,24 @@
 		await base.OnInitializedAsync();
 	}
 
+	public async Task ReloadAutomationAsync(Automation automation)
+	{
+		Automation = automation;
+		automationProperties = FreeScriptHandler.GetAutomationProperties(Automation.Data);
+		using var scriptEngine = FreeScriptHandler.GetScriptEngine(Automation.ScriptType);
+		if (string.IsNullOrWhiteSpace(Automation.Data))
+		{
+			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
+		}
+		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(automationProperties.Script);
+	}
+
 	async Task EditSettingsAsync()
 	{
 		automationProperties.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
 		Automation.Data = System.Text.Json.JsonSerializer.Serialize(automationProperties);
 		await OnEditSettings.InvokeAsync();
+		await InvokeAsync(StateHasChanged);
 	}
 
 	void Restart()
@@ -69,10 +82,14 @@
 		OnRestart.InvokeAsync();
 	}
 
-	async Task SaveAsync()
+	public async Task<string> GetAutomationDataAsync()
 	{
 		automationProperties.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
-		Automation.Data = System.Text.Json.JsonSerializer.Serialize(automationProperties);
+		return System.Text.Json.JsonSerializer.Serialize(automationProperties);
+	}
+
+	async Task SaveAsync()
+	{
 		await OnSave.InvokeAsync();
 	}
 
