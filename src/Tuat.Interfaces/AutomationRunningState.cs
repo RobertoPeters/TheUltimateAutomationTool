@@ -4,5 +4,6 @@ public enum AutomationRunningState
 {
     NotActive,
     Active,
-    Error
+    Error,
+    Finished
 }

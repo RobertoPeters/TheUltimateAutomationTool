@@ -9,18 +9,6 @@ namespace Tuat.FreeScriptAutomation;
 [Editor("Tuat.FreeScriptAutomation.Editor", typeof(Editor))]
 public class FreeScriptHandler: IAutomationHandler
 {
-    public class AutomationProperties
-    {
-        public string Script { get; set; } = null!;
-    }
-
-    private sealed class ScriptEngineInfo
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Automation Automation { get; set; } = null!;
-        public IScriptEngine Engine { get; set; } = null!;
-    }
-
     private Automation _automation;
     private readonly IClientService _clientService;
     private readonly IDataService _dataService;
