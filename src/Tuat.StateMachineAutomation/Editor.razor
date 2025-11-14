@@ -1,0 +1,60 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject Tuat.Interfaces.IClientService ClientService
+@implements IAutomationEditor
+
+@if (ScriptEditorType != null)
+{
+}
+
+@code {
+	[Parameter]
+	public Automation Automation { get; set; } = null!;
+
+	[Parameter]
+	public string? Height { get; set; }
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public EventCallback OnRestart { get; set; }
+
+	[Parameter]
+	public EventCallback OnSave { get; set; }
+
+	[Parameter]
+	public EventCallback OnEditSettings { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+	}
+
+	public async Task ReloadAutomationAsync(Automation automation)
+	{
+	}
+
+	async Task EditSettingsAsync()
+	{
+	}
+
+	void Restart()
+	{
+		OnRestart.InvokeAsync();
+	}
+
+	public Task<string> GetAutomationDataAsync()
+	{
+		return Task.FromResult(string.Empty);
+	}
+
+	async Task SaveAsync()
+	{
+		await OnSave.InvokeAsync();
+	}
+
+}
+

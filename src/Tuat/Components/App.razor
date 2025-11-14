@@ -9,6 +9,13 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["Tuat.styles.css"]" />
     <link rel="stylesheet" href=@Assets["_content/Radzen.Blazor/css/software.css"]>
+    <link rel="stylesheet" href=@Assets["_content/Z.Blazor.Diagrams/style.min.css"] />
+    <link rel="stylesheet" href=@Assets["_content/Z.Blazor.Diagrams/default.styles.min.css"] />
+    <style>
+        .default-node {
+            width: 200px;
+        }
+    </style>
     <ImportMap />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
@@ -21,6 +28,7 @@
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="@Assets["_content/Radzen.Blazor/Radzen.Blazor.js"]"></script>
+    <script src="@Assets["_content/Z.Blazor.Diagrams/script.min.js"]"></script>
     <script>
         window.downloadFileFromStream = async (fileName, contentStreamReference) => {
             const arrayBuffer = await contentStreamReference.arrayBuffer();

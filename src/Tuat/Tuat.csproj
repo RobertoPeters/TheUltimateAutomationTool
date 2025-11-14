@@ -28,6 +28,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+		<ProjectReference Include="..\Blazor.Diagrams\Blazor.Diagrams\Blazor.Diagrams.csproj" />
 		<ProjectReference Include="..\Tuat.Automations\Tuat.Automations.csproj" />
 		<ProjectReference Include="..\Tuat.Clients\Tuat.Clients.csproj" />
 		<ProjectReference Include="..\Tuat.Data\Tuat.Data.csproj" />
@@ -41,6 +42,7 @@
 		<ProjectReference Include="..\Tuat.Repository\Tuat.Repository.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineCSharp\Tuat.ScriptEngineCSharp.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineJavaScript\Tuat.ScriptEngineJavaScript.csproj" />
+		<ProjectReference Include="..\Tuat.StateMachineAutomation\Tuat.StateMachineAutomation.csproj" />
 		<ProjectReference Include="..\Tuat.TimerClient\Tuat.TimerClient.csproj" />
 		<ProjectReference Include="..\Tuat.Variables\Tuat.Variables.csproj" />
 	</ItemGroup>
