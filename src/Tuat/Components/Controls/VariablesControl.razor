@@ -173,7 +173,9 @@
         gridData = variables.Values.ToList();
         if (grid != null)
         {
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
             grid.Data = gridData;
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
             grid!.Reload();
         }
     }

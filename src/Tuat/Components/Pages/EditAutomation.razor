@@ -13,6 +13,9 @@
 
 <PageTitle>TUAT - Edit Automation</PageTitle>
 
+<NavigationLock ConfirmExternalNavigation="true"
+				OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
+
 @if (Automation != null)
 {
 	<span>Edit Automation: @Automation.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
@@ -114,6 +117,7 @@ else
 	private RadzenDataGrid<IScriptEngine.ScriptVariable>? variablesGrid;
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	private List<IScriptEngine.ScriptVariable> scriptVariables = new();
+	private string? _unsavedData = null;
 
 	Type? EditorComponentType()
 	{
@@ -131,6 +135,7 @@ else
 		Automation.Id = Id;
 		scriptVariables = AutomationHandler.GetScriptVariables();
 		await ((IAutomationEditor)(automationEditor!.Instance!)).ReloadAutomationAsync(Automation);
+		_unsavedData = await GetData(useAutomation);
 	}
 
 	protected override async Task OnInitializedAsync()
@@ -165,7 +170,9 @@ else
 
 	async Task EditSettingsAsync()
 	{
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
 		var sm = await DialogService.ShowDialogAsync<AddOrEditAutomationDialog, Automation>("Add Automation", dialog => { dialog.Automation = Automation; });
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
 		if (sm != null)
 		{
 			Automation.Name = sm.Name;
@@ -196,6 +203,7 @@ else
 	async Task SaveAsync()
 	{
 		Automation.Data = await ((IAutomationEditor)(automationEditor!.Instance!)).GetAutomationDataAsync();
+		_unsavedData = await GetData(Automation);
 		await DataService.AddOrUpdateAutomationAsync(Automation);
 	}
 
@@ -270,4 +278,26 @@ else
 			InvokeAsync(StateHasChanged);
 		}
 	}
+
+	async Task<string?> GetData(Automation? useAutomation)
+	{
+		var data = useAutomation == null ? (await ((IAutomationEditor)(automationEditor!.Instance!)).GetAutomationDataAsync()) : (useAutomation.Data ?? "");
+		return $"{Automation.Settings}:{data}";
+	}
+
+	async Task OnBeforeInternalNavigation(LocationChangingContext context)
+	{
+		var currentData = await GetData(null);
+		if (_unsavedData != currentData)
+		{
+			var isConfirmed = await JS.InvokeAsync<bool>("confirm", "Changes are not saved. Are you sure you want to leave the page without saving changes?");
+
+			if (!isConfirmed)
+			{
+				context.PreventNavigation();
+			}
+		}
+	}
+
+
 }

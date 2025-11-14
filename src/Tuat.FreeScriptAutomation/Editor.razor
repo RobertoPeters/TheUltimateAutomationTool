@@ -42,7 +42,7 @@
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
-	FreeScriptHandler.AutomationProperties automationProperties;
+	FreeScriptHandler.AutomationProperties automationProperties = null!;
 
 	protected override async Task OnInitializedAsync()
 	{

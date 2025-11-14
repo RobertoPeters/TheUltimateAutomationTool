@@ -240,9 +240,13 @@ public class FreeScriptHandler: IAutomationHandler
         {
             try
             {
+                if (!_engines.Any())
+                {
+                    return [];
+                }
                 result = _engines[0].Engine.GetScriptVariables();
             }
-            catch (Exception e)
+            catch
             {
                 result = [];
             }
