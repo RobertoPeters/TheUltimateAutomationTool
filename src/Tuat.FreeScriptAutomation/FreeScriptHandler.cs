@@ -182,7 +182,7 @@ public class FreeScriptHandler: IAutomationHandler
 
                     try
                     {
-                        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, _instance, _automationProperties.Script);
+                        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, _instance, _automationProperties.Script, InputValues);
                         RunningState = AutomationRunningState.Active;
                         RequestTriggerProcess();
                     }

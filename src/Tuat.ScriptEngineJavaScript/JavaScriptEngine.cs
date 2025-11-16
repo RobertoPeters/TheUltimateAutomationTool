@@ -1,6 +1,8 @@
-﻿using System.ComponentModel;
+﻿using Jint.Native;
+using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
+using Tuat.Models;
 
 namespace Tuat.ScriptEngineJavaScript;
 
@@ -15,7 +17,7 @@ public class JavaScriptEngine : IScriptEngine
     private IAutomationHandler? _automationHandler;
     private int startOfCustomVariableIndex;
 
-    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
+    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? inputValues = null)
     {
         _clientService = clientService;
         _dataService = dataService;
@@ -25,7 +27,7 @@ public class JavaScriptEngine : IScriptEngine
         startOfCustomVariableIndex = _engine.Global.GetOwnProperties().Count() + 2;
         var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
         _engine.SetValue("system", systemMethods);
-        _engine.Execute(GetSystemScript(_clientService, instanceId));
+        _engine.Execute(GetSystemScript(_clientService, instanceId, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: inputValues));
         if (!string.IsNullOrWhiteSpace(additionalScript))
         {
             _engine.Execute(additionalScript);
@@ -85,7 +87,7 @@ public class JavaScriptEngine : IScriptEngine
         return result.ToString();
     }
 
-    public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null)
+    public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null)
     {
         var script = new StringBuilder();
         script.AppendLine("var global = this");
@@ -136,6 +138,32 @@ public class JavaScriptEngine : IScriptEngine
                 }
             }
         }
+
+        script.AppendLine();
+        subAutomationParameters?.ForEach(p =>
+        {
+            var inputVar = inputValues?.FirstOrDefault(x => string.Compare(x.Name, p.Name, true) == 0);
+            if (inputVar != null)
+            {
+                if (inputVar.Value == null)
+                {
+                    script.AppendLine($"var {p.ScriptVariableName} = null");
+                }
+                else if (inputVar.Value is string v)
+                {
+                    script.AppendLine($"var {p.ScriptVariableName} = '{inputVar.Value}'");
+                }
+                else
+                {
+                    script.AppendLine($"var {p.ScriptVariableName} = {inputVar.Value!.ToString()?.Replace(",", ".")}");
+                }
+            }
+            else
+            {
+                script.AppendLine($"var {p.ScriptVariableName} = {p.DefaultValue}");
+            }
+        });
+
         return script.ToString();
     }
 }

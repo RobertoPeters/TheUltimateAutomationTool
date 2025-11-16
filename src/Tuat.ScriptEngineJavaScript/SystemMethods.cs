@@ -1,5 +1,6 @@
 ﻿using Jint.Native;
 using System.Collections.Concurrent;
+using System.Dynamic;
 using System.Text;
 using Tuat.Interfaces;
 using Tuat.Models;
@@ -102,11 +103,31 @@ internal class SystemMethods
     public void setAutomationFinished(object? scriptOutputValues)
     {
         List<AutomationOutputVariable> outputValues = [];
+        if (scriptOutputValues != null)
+        {
+            var array = (object[])scriptOutputValues;
+            foreach (ExpandoObject outputValue in array)
+            {
+                var name = outputValue.First().Key;
+                var value = outputValue.First().Value;
+                outputValues.Add(new AutomationOutputVariable { Name = name, Value = value });
+            }
+        }
         _automationHandler.SetAutomationFinished(outputValues);
     }
-    public void startSubAutomation(int automationId, object? scriptIutputValues)
+    public void startSubAutomation(int automationId, object? scriptInputValues)
     {
         List<AutomationInputVariable> inputValues = [];
+        if (scriptInputValues != null)
+        {
+            var array = (object[])scriptInputValues;
+            foreach (ExpandoObject inputValue in array)
+            {
+                var name = inputValue.First().Key;
+                var value = inputValue.First().Value;
+                inputValues.Add(new AutomationInputVariable { Name = name, Value = value });
+            }
+        }
         _automationHandler.StartSubAutomation(automationId, inputValues);
     }
 

@@ -1,4 +1,6 @@
-﻿namespace Tuat.Interfaces;
+﻿using Tuat.Models;
+
+namespace Tuat.Interfaces;
 
 public interface IScriptEngine : IDisposable
 {
@@ -18,8 +20,8 @@ public interface IScriptEngine : IDisposable
 
     public record ScriptVariable(string Name, object? Value);
 
-    string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null);
-    void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript);
+    string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null);
+    void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null);
     void CallVoidFunction(string functionName, List<FunctionParameter>? functionParameters = null);
     void Execute(string script);
     object? Evaluate(string script);

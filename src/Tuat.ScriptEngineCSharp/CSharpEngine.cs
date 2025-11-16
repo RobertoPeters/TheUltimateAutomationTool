@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using Tuat.Interfaces;
+using Tuat.Models;
 
 namespace Tuat.ScriptEngineCSharp;
 
@@ -15,13 +16,13 @@ public class CSharpEngine : IScriptEngine
     ScriptState<object>? scriptState;
     Dictionary<string, (IScriptEngine.FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
 
-    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript)
+    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null)
     {
         var totalScript = new StringBuilder();
         additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
         var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler);
         scriptApi._systemMethods = systemMethods;
-        var systemScript = GetSystemScript(clientService, instanceId, additionalScript);
+        var systemScript = GetSystemScript(clientService, instanceId, additionalScript, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: InputValues);
         try
         {
             var options = ScriptOptions.Default
@@ -101,7 +102,7 @@ public class CSharpEngine : IScriptEngine
         return script.ToString();
     }
 
-    public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null)
+    public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null)
     {
         var script = new StringBuilder();
         script.AppendLine(SystemMethods.SystemScript());
@@ -151,6 +152,31 @@ public class CSharpEngine : IScriptEngine
                 }
             }
         }
+
+        script.AppendLine();
+        subAutomationParameters?.ForEach(p =>
+        {
+            var inputVar = inputValues?.FirstOrDefault(x => string.Compare(x.Name, p.Name, true) == 0);
+            if (inputVar != null)
+            {
+                if (inputVar.Value == null)
+                {
+                    script.AppendLine($"var {p.ScriptVariableName} = null;");
+                }
+                else if (inputVar.Value is string v)
+                {
+                    script.AppendLine($"""var {p.ScriptVariableName} = "{inputVar.Value}"; """);
+                }
+                else
+                {
+                    script.AppendLine($"var {p.ScriptVariableName} = {inputVar.Value!.ToString()?.Replace(",", ".")};");
+                }
+            }
+            else
+            {
+                script.AppendLine($"var {p.ScriptVariableName} = {p.DefaultValue};");
+            }
+        });
 
         return script.ToString();
     }
