@@ -11,6 +11,7 @@ internal class SystemMethods
     private readonly IVariableService _variableService;
     private readonly IAutomationHandler _automationHandler;
     private readonly IClientService _clientService;
+    private readonly IDataService _dataService;
     private readonly ConcurrentDictionary<int, Client> _clients;
 
     public record DateTimeInfo(int year, int month, int day, int hour, int minute, int second, int dayOfWeek);
@@ -21,6 +22,7 @@ internal class SystemMethods
         _variableService = variableService;
         _automationHandler = automationHandler;
         _clientService = clientService;
+        _dataService = dataService;
         _clients = new ConcurrentDictionary<int, Client>(dataService.GetClients().ToDictionary(c => c.Id));
     }
 
@@ -86,17 +88,23 @@ internal class SystemMethods
         return client?.Id ?? -1;
     }
 
+    public int getAutomationId(string name)
+    {
+        var automation = _dataService.GetAutomations().FirstOrDefault(c => c.Name == name);
+        return automation?.Id ?? -1;
+    }
+
     public bool clientExecute(int clientId, int? variableId, string command, object? parameter1, object? parameter2, object? parameter3)
     {
         return _clientService.ExecuteAsync(clientId, variableId, command, parameter1, parameter2, parameter3).Result;
     }
 
-    public void setAutomationFinished(JsArray? scriptOutputValues)
+    public void setAutomationFinished(object? scriptOutputValues)
     {
         List<AutomationOutputVariable> outputValues = [];
         _automationHandler.SetAutomationFinished(outputValues);
     }
-    public void startSubAutomation(int automationId, JsArray? scriptIutputValues)
+    public void startSubAutomation(int automationId, object? scriptIutputValues)
     {
         List<AutomationInputVariable> inputValues = [];
         _automationHandler.StartSubAutomation(automationId, inputValues);
@@ -143,6 +151,12 @@ internal class SystemMethods
         return system.getClientId(name)
     }
 
+    // returns the automation id or -1 if not found
+    getAutomationId = function(name) 
+    {
+        return system.getAutomationId(name)
+    }
+
     //execute specific client commands (-1 if it fails)
     //e.g. executeOnClient(clientIdOfHomeAssistant, null, 'callservice', 'light', 'turn_on', { "entity_id": "light.my_light", "brightness_pct": 20})
     executeOnClient = function(clientId, variableId, command, parameter1, parameter2, parameter3) {
@@ -175,7 +189,7 @@ internal class SystemMethods
     }
     
     startSubAutomation = function(automationId, scriptInputValues) {
-        system.startSubAutomation(scriptInputValues)
+        system.startSubAutomation(automationId, scriptInputValues)
     }
 
     // check if the started sub-automation is still running

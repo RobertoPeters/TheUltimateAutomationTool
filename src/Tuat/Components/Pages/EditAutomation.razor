@@ -157,6 +157,7 @@ else
 		UIEventRegistration.AutomationStateInfoChanged += AutomationInfoChanged;
 		UIEventRegistration.AutomationTriggered += AutomationHasTriggered;
 		scriptVariables = AutomationHandler.GetScriptVariables();
+		_unsavedData = await GetData(Automation);
 		await base.OnInitializedAsync();
 	}
 

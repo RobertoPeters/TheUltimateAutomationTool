@@ -81,12 +81,14 @@ public class FreeScriptHandler: IAutomationHandler
     public void SetAutomationFinished(List<AutomationOutputVariable> OutputValues)
     {
         RunningState = AutomationRunningState.Finished;
+        OnAutomationFinished?.Invoke(this, OutputValues);
     }
 
     private void OnSubAutomationFinished(object? sender, List<AutomationOutputVariable> outputValues)
     {
         //todo handle output values
         DisposeSubAutomation();
+        RequestTriggerProcess();
     }
 
     public void StartSubAutomation(int automationId, List<AutomationInputVariable> InputValues)
@@ -99,14 +101,14 @@ public class FreeScriptHandler: IAutomationHandler
                    select a).FirstOrDefault();
 
         var type = asm.GetTypes().First(x => x.FullName == automation.AutomationType);
-        var automationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
-        automationHandler!.Start(_instance, InputValues);
-        automationHandler.OnAutomationFinished += OnSubAutomationFinished;
+        _subAutomationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
+        _subAutomationHandler!.OnAutomationFinished += OnSubAutomationFinished;
+        _subAutomationHandler.Start(_instance, InputValues);
     }
 
     public bool IsSubAutomationRunning()
     {
-        return _subAutomationHandler == null || _subAutomationHandler.RunningState == AutomationRunningState.Active;
+        return _subAutomationHandler != null && _subAutomationHandler.RunningState == AutomationRunningState.Active;
     }
 
     private long _triggering = 0;

@@ -10,6 +10,7 @@ public class SystemMethods
     private readonly IVariableService _variableService;
     private readonly IAutomationHandler _automationHandler;
     private readonly IClientService _clientService;
+    private readonly IDataService _dataService;
     private readonly ConcurrentDictionary<int, Client> _clients;
 
     public record DateTimeInfo(int year, int month, int day, int hour, int minute, int second, int dayOfWeek);
@@ -20,6 +21,7 @@ public class SystemMethods
         _variableService = variableService;
         _automationHandler = automationHandler;
         _clientService = clientService;
+        _dataService = dataService;
         _clients = new ConcurrentDictionary<int, Client>(dataService.GetClients().ToDictionary(c => c.Id));
     }
 
@@ -85,6 +87,12 @@ public class SystemMethods
         return client?.Id ?? -1;
     }
 
+    public int GetAutomationId(string name)
+    {
+        var automation = _dataService.GetAutomations().FirstOrDefault(c => c.Name == name);
+        return automation?.Id ?? -1;
+    }
+
     public bool ClientExecute(int clientId, int? variableId, string command, object? parameter1, object? parameter2, object? parameter3)
     {
         return _clientService.ExecuteAsync(clientId, variableId, command, parameter1, parameter2, parameter3).Result;
@@ -141,6 +149,12 @@ public class SystemMethods
     int GetClientId(string name) 
     {
         return _systemMethods.GetClientId(name);
+    }
+
+    // returns the automation id or -1 if not found
+    int GetAutomationId(string name) 
+    {
+        return _systemMethods.GetAutomationId(name);
     }
 
     //execute specific client commands (false if it fails)
