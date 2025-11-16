@@ -9,5 +9,6 @@ public class Automation : ModelBase
     public string ScriptType { get; set; } = null!;
     public string? Settings { get; set; } = null!;
     public string Data { get; set; } = null!;
+    public List<SubAutomationParameter> SubAutomationParameters { get; set; } = [];
 }
 

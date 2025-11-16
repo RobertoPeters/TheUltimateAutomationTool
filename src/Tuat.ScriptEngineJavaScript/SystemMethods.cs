@@ -91,6 +91,22 @@ internal class SystemMethods
         return _clientService.ExecuteAsync(clientId, variableId, command, parameter1, parameter2, parameter3).Result;
     }
 
+    public void setAutomationFinished(JsArray? scriptOutputValues)
+    {
+        List<AutomationOutputVariable> outputValues = [];
+        _automationHandler.SetAutomationFinished(outputValues);
+    }
+    public void startSubAutomation(int automationId, JsArray? scriptIutputValues)
+    {
+        List<AutomationInputVariable> inputValues = [];
+        _automationHandler.StartSubAutomation(automationId, inputValues);
+    }
+
+    public bool isSubAutomationRunning()
+    {
+        return _automationHandler.IsSubAutomationRunning();
+    }
+
     public static string SystemScript()
     {
         var script = new StringBuilder();
@@ -156,7 +172,22 @@ internal class SystemMethods
 
     isMockingVariableActive = function(variableId) {
         return system.isMockingVariableActive(variableId)
-    }    
+    }
+    
+    startSubAutomation = function(automationId, scriptInputValues) {
+        system.startSubAutomation(scriptInputValues)
+    }
+
+    // check if the started sub-automation is still running
+    isSubAutomationRunning = function() {
+        return system.isSubAutomationRunning()
+    }
+
+    // set the automation as finished and provide output values (array of { 'name': value })
+    setAutomationFinished = function(outputValues) {
+        return system.setAutomationFinished(outputValues)
+    }
+    
     """";
 }
 

@@ -1,6 +1,6 @@
-﻿namespace Tuat.StateMachineAutomation;
+﻿namespace Tuat.Models;
 
-public class SubStateMachineParameter
+public class SubAutomationParameter
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = null!;

@@ -90,6 +90,19 @@ public class SystemMethods
         return _clientService.ExecuteAsync(clientId, variableId, command, parameter1, parameter2, parameter3).Result;
     }
 
+    public void SetAutomationFinished(List<AutomationOutputVariable> outputValues)
+    {
+         _automationHandler.SetAutomationFinished(outputValues);
+    }
+    public void StartSubAutomation(int automationId, List<AutomationInputVariable> inputValues)
+    {
+        _automationHandler.StartSubAutomation(automationId, inputValues);
+    }
+
+    public bool IsSubAutomationRunning()
+    {
+        return _automationHandler.IsSubAutomationRunning();
+    }
     public static string SystemScript()
     {
         var script = new StringBuilder();
@@ -165,7 +178,23 @@ public class SystemMethods
     bool IsMockingVariableActive(int variableId) 
     {
         return _systemMethods.IsMockingVariableActive(variableId);
-    }    
+    }
+    
+    void SetAutomationFinished(List<AutomationOutputVariable> outputValues)
+    {
+        _systemMethods.SetAutomationFinished(outputValues);
+    }
+
+    void StartSubAutomation(int automationId, List<AutomationInputVariable> inputValues)
+    {
+        _systemMethods.StartSubAutomation(automationId, inputValues);
+    }
+
+    bool IsSubAutomationRunning()
+    {
+        return _systemMethods.IsSubAutomationRunning();
+    }
+
     """";
 }
 

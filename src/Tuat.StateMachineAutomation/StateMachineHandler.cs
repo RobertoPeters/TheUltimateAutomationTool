@@ -7,7 +7,7 @@ namespace Tuat.StateMachineAutomation;
 [DisplayName("State Machine")]
 [Editor("Tuat.StateMachineAutomation.AutomationSettings", typeof(AutomationSettings))]
 [Editor("Tuat.StateMachineAutomation.Editor", typeof(Editor))]
-public class StateMachineHandler : IAutomationHandler
+public class StateMachineHandler// : IAutomationHandler
 {
     private Automation _automation;
     private readonly IClientService _clientService;

@@ -26,7 +26,7 @@ public class CSharpEngine : IScriptEngine
         {
             var options = ScriptOptions.Default
                 .AddReferences(typeof(DynamicScriptApi).Assembly)
-                .AddImports("System", "System.Collections.Generic");
+                .AddImports("System", "System.Collections.Generic", "Tuat.Interfaces");
 
             scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
         }
