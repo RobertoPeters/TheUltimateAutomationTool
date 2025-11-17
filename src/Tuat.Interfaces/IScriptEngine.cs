@@ -27,4 +27,5 @@ public interface IScriptEngine : IDisposable
     object? Evaluate(string script);
     string GetDeclareFunction(string functionName, FunctionReturnValue? returnValue = null, List<FunctionParameter>? functionParameters = null, string? body = null);
     List<ScriptVariable> GetScriptVariables();
+    void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables);
 }

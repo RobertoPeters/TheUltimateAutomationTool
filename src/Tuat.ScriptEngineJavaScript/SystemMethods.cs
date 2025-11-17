@@ -209,6 +209,7 @@ internal class SystemMethods
         return system.isMockingVariableActive(variableId)
     }
     
+    // start a sub automation and provide input values (array of { 'name': value })
     startSubAutomation = function(automationId, scriptInputValues) {
         system.startSubAutomation(automationId, scriptInputValues)
     }

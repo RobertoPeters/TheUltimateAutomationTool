@@ -34,6 +34,35 @@ public class JavaScriptEngine : IScriptEngine
         }
     }
 
+    public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
+    {
+        foreach (var variable in outputVariables) 
+        {
+            var scriptVariable = GetScriptVariables().FirstOrDefault(x => x.Name == variable.Name);
+            string valueText = "";
+            if (variable.Value == null)
+            {
+                valueText = "null";
+            }
+            else if (variable.Value is string)
+            {
+                valueText = $"'{variable.Value}'";
+            }
+            else
+            {
+                valueText = variable.Value.ToString()!.Replace(",",".");
+            }
+            if (scriptVariable != null)
+            {
+                Execute($"{variable.Name} = {valueText}");
+            }
+            else
+            {
+                Execute($"var {variable.Name} = {valueText}");
+            }
+        }
+    }
+
     public List<IScriptEngine.ScriptVariable> GetScriptVariables()
     {
         return _engine?.Global.GetOwnProperties().Skip(startOfCustomVariableIndex)

@@ -18,23 +18,44 @@ public class CSharpEngine : IScriptEngine
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null)
     {
-        var totalScript = new StringBuilder();
         additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
         var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler);
         scriptApi._systemMethods = systemMethods;
         var systemScript = GetSystemScript(clientService, instanceId, additionalScript, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: InputValues);
-        try
-        {
-            var options = ScriptOptions.Default
-                .AddReferences(typeof(DynamicScriptApi).Assembly)
-                .AddImports("System", "System.Collections.Generic", "Tuat.Interfaces");
+        var options = ScriptOptions.Default
+            .AddReferences(typeof(DynamicScriptApi).Assembly)
+            .AddImports("System", "System.Collections.Generic", "Tuat.Interfaces");
 
-            scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
-        }
-        catch (Exception ex)
+        scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
+    }
+
+    public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
+    {
+        foreach (var variable in outputVariables)
         {
-            Console.WriteLine($"Error compiling script: {ex.Message}");
-            return;
+            var scriptVariable = scriptState!.GetVariable(variable.Name);
+            if (scriptVariable != null)
+            {
+                scriptVariable.Value = Convert.ChangeType(variable.Value, scriptVariable.Value.GetType());
+            }
+            else
+            {
+                string valueText = "";
+                if (variable.Value == null)
+                {
+                    valueText = "null";
+                }
+                else if (variable.Value is string)
+                {
+                    valueText = $"\"{variable.Value}\"";
+                }
+                else
+                {
+                    valueText = variable.Value.ToString()!.Replace(",", ".");
+                }
+
+                Execute($"var {variable.Name} = {valueText};");
+            }
         }
     }
 
@@ -56,13 +77,13 @@ public class CSharpEngine : IScriptEngine
 
     public void Execute(string script)
     {
-        //_engine?.Execute(script);
+        scriptState = scriptState!.ContinueWithAsync(script).Result;
     }
 
     public object? Evaluate(string script)
     {
-        return null;
-        //return _engine?.Evaluate(script)?.ToObject();
+        scriptState = scriptState!.ContinueWithAsync(script).Result;
+        return scriptState.ReturnValue;
     }
 
     public void Dispose()
@@ -105,15 +126,17 @@ public class CSharpEngine : IScriptEngine
     public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null)
     {
         var script = new StringBuilder();
-        script.AppendLine(SystemMethods.SystemScript());
-        script.AppendLine();
-        script.AppendLine($""""var instanceId = "{(instanceId ?? Guid.Empty).ToString()}"; """");
-        script.AppendLine();
         if (!string.IsNullOrEmpty(additionalScript))
         {
             script.AppendLine(additionalScript);
         }
+        script.AppendLine();
 
+        script.AppendLine(SystemMethods.SystemScript());
+        script.AppendLine();
+        script.AppendLine($""""var instanceId = "{(instanceId ?? Guid.Empty).ToString()}"; """");
+        script.AppendLine();
+ 
         var clients = clientService.GetClients();
         List<string> clientTypesHandled = [];
         foreach (var client in clients)

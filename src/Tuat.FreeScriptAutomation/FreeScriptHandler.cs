@@ -102,7 +102,21 @@ public class FreeScriptHandler: IAutomationHandler
 
     private void OnSubAutomationFinished(object? sender, List<AutomationOutputVariable> outputValues)
     {
-        //todo handle output values
+        if (_subAutomationHandler != null && _engine != null)
+        {
+            var subAutomationResultParameters = (from subAutomationParameter in _subAutomationHandler.Automation.SubAutomationParameters
+                                                 from outputValue in outputValues.Where(x => x.Name == subAutomationParameter.Name).DefaultIfEmpty()
+                                                 where subAutomationParameter.IsOutput
+                                                 select new AutomationOutputVariable
+                                                 {
+                                                     Name = subAutomationParameter.ScriptVariableName,
+                                                     Value = outputValue == null ? subAutomationParameter.DefaultValue : outputValues.FirstOrDefault(x => x.Name == subAutomationParameter.Name)?.Value
+                                                 }).ToList();
+            if (subAutomationResultParameters.Any())
+            {
+                _engine.HandleSubAutomationOutputVariables(subAutomationResultParameters);
+            }
+        }
         DisposeSubAutomation();
         RequestTriggerProcess();
     }
