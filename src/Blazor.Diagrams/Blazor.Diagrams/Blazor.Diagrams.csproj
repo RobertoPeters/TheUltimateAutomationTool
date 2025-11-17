@@ -15,10 +15,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="wwwroot\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\Blazor.Diagrams.Core\Blazor.Diagrams.Core.csproj" />
 	</ItemGroup>
 
