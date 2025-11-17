@@ -21,6 +21,7 @@ public class FreeScriptHandler: IAutomationHandler
     private IScriptEngine? _engine;
     private Guid _instance;
     private IAutomationHandler? _subAutomationHandler = null;
+    private bool _isRunningAsSubAutomation = false;
 
     private readonly object _lockEngineObject = new object();
     private bool _readyForTriggers = false;
@@ -33,6 +34,7 @@ public class FreeScriptHandler: IAutomationHandler
 
     public string? ErrorMessage { get; private set; }
     public event EventHandler<List<AutomationOutputVariable>> OnAutomationFinished;
+    public event EventHandler<LogEntry> OnLogEntry;
 
     private AutomationRunningState _runningState = AutomationRunningState.NotActive;
     public AutomationRunningState RunningState
@@ -84,6 +86,20 @@ public class FreeScriptHandler: IAutomationHandler
         OnAutomationFinished?.Invoke(this, OutputValues);
     }
 
+    private void OnSubAutomationLogEntry(object? sender, LogEntry logEntry)
+    {
+        logEntry.Message = $"[{Automation.Name}].{logEntry.Message}";
+        logEntry.AutomationId = Automation.Id;
+        if (_isRunningAsSubAutomation)
+        {
+            OnLogEntry?.Invoke(this, logEntry);
+        }
+        else
+        {
+            _messageBusService.PublishAsync(logEntry);
+        }
+    }
+
     private void OnSubAutomationFinished(object? sender, List<AutomationOutputVariable> outputValues)
     {
         //todo handle output values
@@ -103,6 +119,7 @@ public class FreeScriptHandler: IAutomationHandler
         var type = asm.GetTypes().First(x => x.FullName == automation.AutomationType);
         _subAutomationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
         _subAutomationHandler!.OnAutomationFinished += OnSubAutomationFinished;
+        _subAutomationHandler.OnLogEntry += OnSubAutomationLogEntry;
         _subAutomationHandler.Start(_instance, InputValues);
     }
 
@@ -162,6 +179,7 @@ public class FreeScriptHandler: IAutomationHandler
         {
             lock (_lockEngineObject)
             {
+                _isRunningAsSubAutomation = instanceId != null;
                 var scriptEngine = GetScriptEngine(Automation.ScriptType);
                 if (scriptEngine == null)
                 {
@@ -302,9 +320,16 @@ public class FreeScriptHandler: IAutomationHandler
             {
                 logEvent.Message = System.Text.Json.JsonSerializer.Serialize(logObject, logJsonOptions);
             }
-            logEvent.Message = $"{Automation.Name}: {logEvent.Message}";
+            logEvent.Message = $"[{Automation.Name}]: {logEvent.Message}";
 
-            await _messageBusService.PublishAsync(logEvent);
+            if (_isRunningAsSubAutomation)
+            {
+                OnLogEntry?.Invoke(this, logEvent);
+            }
+            else
+            {
+                await _messageBusService.PublishAsync(logEvent);
+            }
         }
     }
 
@@ -343,6 +368,7 @@ public class FreeScriptHandler: IAutomationHandler
     {
         if (_subAutomationHandler != null)
         {
+            _subAutomationHandler.OnLogEntry -= OnSubAutomationLogEntry;
             _subAutomationHandler.OnAutomationFinished -= OnSubAutomationFinished;
             _subAutomationHandler.Dispose();
             _subAutomationHandler = null;

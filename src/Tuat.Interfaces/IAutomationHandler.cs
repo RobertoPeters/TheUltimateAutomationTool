@@ -18,4 +18,5 @@ public interface IAutomationHandler : IDisposable
     void StartSubAutomation(int automationId, List<AutomationInputVariable> InputValues);
     bool IsSubAutomationRunning();
     event EventHandler<List<AutomationOutputVariable>> OnAutomationFinished;
+    event EventHandler<LogEntry> OnLogEntry;
 }
