@@ -1,0 +1,49 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Dialogs
+@inherits ResultDialogBase<Information>
+
+<RadzenTemplateForm @ref="Form" Data="@Model" TItem="Information">
+    <RadzenStack>
+        <RadzenFormField Text="Description" Variant="@Variant.Outlined">
+            <RadzenTextArea @bind-Value="@Model!.Description" Name="Description" Rows="3" spellcheck="false" />
+        </RadzenFormField>
+        <RadzenFormField Text="Local variable" Variant="@Variant.Outlined">
+            <RadzenTextBox @bind-Value="@Model!.Evaluation" Name="Evaluation" Style="width: 100%;" spellcheck="false" />
+        </RadzenFormField>
+    </RadzenStack>
+    <RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+</RadzenTemplateForm>
+
+
+@code {
+    protected override bool ShowClose => true;
+    protected override bool IsPersistent => false;
+    protected override bool CloseDialogOnOverlayClick => true;
+    protected override int? WidthInPixels => 1400;
+
+    [Parameter]
+    public Information? Information { get; set; }
+
+    private Information? Model;
+    private RadzenTemplateForm<Information>? Form;
+
+    protected override void OnInitialized()
+    {
+        if (Information == null)
+        {
+            Information = new Information();
+        }
+        Model = Information.CopyObject();
+        base.OnInitialized();
+    }
+
+    void OnSubmit()
+    {
+        Form!.EditContext.Validate();
+        if (Form.IsValid)
+        {
+            Close(Model);
+        }
+    }
+}

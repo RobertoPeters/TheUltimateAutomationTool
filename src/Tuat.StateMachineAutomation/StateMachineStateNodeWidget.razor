@@ -1,0 +1,42 @@
+﻿@using Blazor.Diagrams.Components.Renderers
+@using Blazor.Diagrams.Core.Models
+@using Radzen
+@using Radzen.Blazor
+@using Tuat.Dialogs
+@inject DialogService DialogService
+@inherits ComponentBase
+
+<div class="default-node @(Node.Group != null ? "grouped" : "") @(Node.Selected ? "selected" : "")" style="position: relative;">
+	<strong>@(Node.Title ?? "Title")</strong>
+	@foreach (var port in Node.Ports)
+	{
+		<PortRenderer @key="port" Port="port" Class="default"></PortRenderer>
+	}
+	<RadzenButton Size=ButtonSize.ExtraSmall
+				  ButtonStyle="@(string.IsNullOrWhiteSpace(Node.State.EntryAction) ? ButtonStyle.Light : ButtonStyle.Dark)"
+				  Text="Action"
+				  Click="@OnEditEntryActionAsync"
+				  style="position: absolute; right: 8px; bottom: 8px; z-index: 1;" />
+</div>
+
+@code {
+
+	[Parameter]
+	public StateMachineStateNodeModel Node { get; set; } = null!;
+
+	async Task OnEditEntryActionAsync()
+	{
+		var result = await DialogService.ShowDialogAsync<ScriptEditorDialog, string?>("State Entry Action", dialog =>
+		{
+			dialog.Script = Node.State.EntryAction;
+			dialog.ScriptEditorType = Node.ScriptEditorType;
+			dialog.ScriptEngine = Node.ScriptEngine;
+
+		});
+		if (result != null)
+		{
+			Node.State.EntryAction = result;
+		}
+
+	}
+}

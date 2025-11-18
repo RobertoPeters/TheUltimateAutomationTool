@@ -1,0 +1,33 @@
+﻿@using Radzen.Blazor
+@using Tuat.Dialogs
+@using Tuat.Interfaces
+@inherits ResultDialogBase<string?>
+
+
+<ScriptEditor @ref="scriptEditor"
+			  ScriptEditorType="@ScriptEditorType"
+			  Script="@Script"
+			  ScriptEngine="@ScriptEngine"
+			  Height="50vh" />
+<RadzenButton Click="@(async () => Close(await scriptEditor!.GetScriptAsync()))"
+			  Text="OK" />
+
+
+
+@code {
+	protected override bool ShowClose => true;
+	protected override bool IsPersistent => false;
+	protected override bool CloseDialogOnOverlayClick => true;
+	protected override int? WidthInPixels => 1400;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public string? Script { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	ScriptEditor? scriptEditor;
+}

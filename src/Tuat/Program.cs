@@ -30,6 +30,7 @@ builder.Services.AddSingleton<Tuat.Interfaces.IVariableService, Tuat.Variables.V
 builder.Services.AddSingleton<Tuat.Interfaces.IClientService, Tuat.Clients.ClientService>();
 builder.Services.AddSingleton<Tuat.Interfaces.IAutomationService, Tuat.Automations.AutomationService>();
 builder.Services.AddSingleton<Tuat.Interfaces.IUIEventRegistration, Tuat.Components.UIEventRegistration>();
+builder.Services.AddSingleton<Tuat.Interfaces.IClipboardService, Tuat.ClipboardService>();
 builder.Services.AddScoped<ContextMenuService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<DialogService>();

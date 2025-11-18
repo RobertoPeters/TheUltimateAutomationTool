@@ -29,6 +29,11 @@ public class CSharpEngine : IScriptEngine
         scriptState = CSharpScript.RunAsync(systemScript, options, globals: scriptApi).Result;
     }
 
+    public string GetReturnTrueStatement()
+    {
+        return "return true;";
+    }
+
     public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
     {
         foreach (var variable in outputVariables)

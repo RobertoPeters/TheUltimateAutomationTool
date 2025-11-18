@@ -34,6 +34,11 @@ public class JavaScriptEngine : IScriptEngine
         }
     }
 
+    public string GetReturnTrueStatement()
+    {
+        return "return true";
+    }
+
     public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
     {
         foreach (var variable in outputVariables) 
