@@ -216,9 +216,9 @@ public class SystemMethods
     }
 
     // stop the running sub-automation
-    bool StopSubAutomation()
+    void StopSubAutomation()
     {
-        return _systemMethods.StopSubAutomation();
+        _systemMethods.StopSubAutomation();
     }
     
     """";
