@@ -19,6 +19,7 @@
 @inject DialogService DialogService
 @inject ContextMenuService ContextMenuService
 @inject IClipboardService ClipboardService
+@inject Tuat.Interfaces.IUIEventRegistration UIEventRegistration
 @inject IJSRuntime JS
 @implements IAutomationEditor
 @implements IDisposable
@@ -29,6 +30,9 @@
 
 		<div style="position: absolute; top: 10px; left: 10px; z-index: 10;" @oncontextmenu:preventDefault="false">
 			<RadzenButton Size="ButtonSize.Small" Text="Pre Start Action " Click="EditPreStartActionAsync" />
+		</div>
+		<div style="position: absolute; bottom: 20px; left: 10px; z-index: 10;" @oncontextmenu:preventDefault="false">
+            Current state: @CurrentState?.Name
 		</div>
 
 		<div style="position: absolute; top: 10px; right: 10px; z-index: 10;" @oncontextmenu:preventDefault="false">
@@ -85,6 +89,7 @@
 
     BlazorDiagram _diagram = null!;
     bool _draggingElement;
+    StateMachineStateNodeModel? _currentActiveNode = null;
     IScriptEngine? _scriptEngine;
     AutomationProperties _automationProperties = null!;
     StateMachineHandler _stateMachineHandler = null!;
@@ -92,6 +97,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        UIEventRegistration.AutomationTriggered += OnAutomationTriggered;
+        UIEventRegistration.AutomationHandlerChanged += OnAutomationHandlerChanged;
+        UIEventRegistration.AutomationStateInfoChanged += OnAutomationStateInfoChanged;
         _stateMachineHandler = (StateMachineHandler)AutomationService.GetAutomation(Automation.Id);
         _automationProperties = StateMachineHandler.GetAutomationProperties(Automation.Data);
         _scriptEngine = StateMachineHandler.GetScriptEngine(Automation.ScriptType);
@@ -156,6 +164,9 @@
 
     public void Dispose()
     {
+        UIEventRegistration.AutomationTriggered -= OnAutomationTriggered;
+        UIEventRegistration.AutomationHandlerChanged -= OnAutomationHandlerChanged;
+        UIEventRegistration.AutomationStateInfoChanged -= OnAutomationStateInfoChanged;
         _diagram.PointerUp -= DiagramPointerUpAsync;
         _diagram.PointerMove -= DiagramPointerMove;
         _diagram.PointerDown -= DiagramPointerDown;
@@ -179,9 +190,48 @@
         return Task.FromResult(System.Text.Json.JsonSerializer.Serialize(_automationProperties));
     }
 
+    State? CurrentState => ((StateMachineHandler)_stateMachineHandler).CurrentState;
+
     async Task SaveAsync()
     {
         await OnSave.InvokeAsync();
+    }
+
+    void OnAutomationStateInfoChanged(object? sender, AutomationStateInfo handlerInfo)
+    {
+        if (handlerInfo.AutomationId == Automation.Id)
+        {
+            UpdateUI();
+        }        
+    }
+
+    void OnAutomationHandlerChanged(object? sender, AutomationHandlerInfo handlerInfo)
+    {
+        if (handlerInfo.AutomationHandler.Automation.Id == Automation.Id)
+        {
+            UpdateUI();
+        }        
+    }
+
+    void OnAutomationTriggered(object? sender, AutomationTriggered triggerInfo)
+    {
+        if (triggerInfo.AutomationId == Automation.Id)
+        {
+            UpdateUI();
+        }
+    }
+
+    void UpdateUI()
+    {
+        var currentState = CurrentState;
+        if (currentState?.Id != _currentActiveNode?.State.Id)
+        {
+            _currentActiveNode?.Active = false;
+            _currentActiveNode?.Refresh();
+            _currentActiveNode = _diagram.GetNode(currentState) as StateMachineStateNodeModel;
+            _currentActiveNode?.Active = true;
+            _currentActiveNode?.Refresh();
+        }
     }
 
     async Task EditPreStartActionAsync()
@@ -722,6 +772,10 @@
     {
         if (node is StateMachineStateNodeModel smNode)
         {
+            if (smNode.Active)
+            {
+                _currentActiveNode = null;
+            }
             //should remove transitions as well
             var state = smNode.GetState(_automationProperties)!;
             var transitions = _automationProperties.Transitions.Where(x => x.FromStateId == state.Id || x.ToStateId == state.Id).ToList();
@@ -807,6 +861,7 @@
 
 	Task ReloadDiagramAsync(Automation? useAutomation = null)
 	{
+        _currentActiveNode = null;
 		_diagram.Links.Clear();
 		_diagram.Nodes.Clear();
 		foreach (var state in _automationProperties.States)
@@ -835,7 +890,7 @@
 				Title = information.Description ?? information.Evaluation ?? ""
 			});
 		}
-		StateChanged(null, null);
+		UpdateUI();
 		RefreshInformations();
 		_diagram.Refresh();
 		return Task.CompletedTask;
@@ -847,15 +902,6 @@
 		var link = _diagram.Links.Add(new LinkModel(source!.Ports.First(x => x.Alignment == sourcePortAllignment), target!.Ports.First(x => x.Alignment == targetPortAllignment)));
 		link.TargetMarker = LinkMarker.Arrow;
 		link.AddLabel(transition.Description ?? transition.Condition ?? "true");
-	}
-
-	void StateChanged(object? sender, State? state)
-	{
-		InvokeAsync(() =>
-		{
-			//var currentState = stateMachineHandler.CurrentState;
-			StateHasChanged();
-		});
 	}
 
 	void RefreshInformations()

@@ -6,7 +6,7 @@
 @inject DialogService DialogService
 @inherits ComponentBase
 
-<div class="default-node @(Node.Group != null ? "grouped" : "") @(Node.Selected ? "selected" : "")" style="position: relative;">
+<div class="default-node @(Node.Group != null ? "grouped" : "") @(Node.Selected ? "selected" : "")" style="position: relative;@(Node.Active && !Node.Selected ? "border-width: 5px;border-color:darkblue;" : "")">
 	<strong>@(Node.Title ?? "Title")</strong>
 	@foreach (var port in Node.Ports)
 	{

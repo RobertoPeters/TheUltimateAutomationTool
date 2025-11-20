@@ -19,4 +19,5 @@ public class StateMachineStateNodeModel : NodeModel
     public Automation Automation { get; set; }
     public Type? ScriptEditorType { get; set; }
     public IScriptEngine? ScriptEngine { get; set; }
+    public bool Active { get; set; }
 }
