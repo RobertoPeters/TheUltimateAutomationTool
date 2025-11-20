@@ -20,6 +20,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Tuat.AutomationHelper\Tuat.AutomationHelper.csproj" />
 		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
 	</ItemGroup>
 

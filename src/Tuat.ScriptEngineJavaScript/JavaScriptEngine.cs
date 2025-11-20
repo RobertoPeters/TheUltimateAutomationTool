@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Text;
 using Tuat.Interfaces;
 using Tuat.Models;
+using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineJavaScript;
 
@@ -86,6 +87,18 @@ public class JavaScriptEngine : IScriptEngine
         }
         result.AppendLine(")");
         _engine?.Execute(result.ToString());
+    }
+
+    public T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null)
+    {
+        var result = new StringBuilder();
+        result.Append($"{functionName}(");
+        if (functionParameters?.Any() == true)
+        {
+            string.Join(", ", functionParameters.Select(p => p.Name));
+        }
+        result.AppendLine(")");
+        return (T?)Evaluate(result.ToString());
     }
 
     public void Execute(string script)

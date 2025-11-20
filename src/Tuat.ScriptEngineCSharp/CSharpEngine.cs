@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Tuat.Interfaces;
 using Tuat.Models;
+using static Tuat.Interfaces.IScriptEngine;
 
 namespace Tuat.ScriptEngineCSharp;
 
@@ -80,6 +81,18 @@ public class CSharpEngine : IScriptEngine
         }
     }
 
+    public T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null)
+    {
+        var methodProtoType = scriptMethodProtoTypes[functionName];
+        var scriptMethod = scriptApi.Methods[functionName];
+        if (methodProtoType.functionParameters?.Any() != true)
+        {
+            var func = (Func<T>)scriptMethod;
+            return func();
+        }
+        return default;
+    }
+
     public void Execute(string script)
     {
         scriptState = scriptState!.ContinueWithAsync(script).Result;
@@ -100,8 +113,10 @@ public class CSharpEngine : IScriptEngine
         scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
 
         var result = new StringBuilder();
-        result.Append($"void {functionName}("); //todo return type
-        //todo
+        var returnTypeText = returnValue == null ? "void" : $"{returnValue.Type.FullName}{(returnValue.Nullable ? "?" : "")}";
+        var funcPar = functionParameters?.Select(p => $"{p.Type.FullName}{(p.Nullable ? "?" : "")} {p.Name}").ToList() ?? [];
+        result.Append($"{returnTypeText} {functionName}(");
+        result.Append(string.Join(", ", funcPar));
         result.AppendLine(")");
         result.AppendLine("{");
         if (body != null)
@@ -122,6 +137,22 @@ public class CSharpEngine : IScriptEngine
                 if (methodProtoType.Value.returnValue == null)
                 {
                     script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Action){methodProtoType.Key};""");
+                }
+                else
+                {
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{methodProtoType.Value.returnValue.Type.FullName}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
+                }
+            }
+            else
+            {
+                var funcPar = methodProtoType.Value.functionParameters.Select(p => $"{p.Type.FullName}{(p.Nullable ? "?" : "")}").ToList();
+                if (methodProtoType.Value.returnValue == null)
+                {
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Action({funcPar})){methodProtoType.Key};""");
+                }
+                else
+                {
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{funcPar}, {methodProtoType.Value.returnValue.Type.FullName}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
                 }
             }
         }

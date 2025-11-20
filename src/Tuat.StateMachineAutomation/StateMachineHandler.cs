@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Text;
+using Tuat.AutomationHelper;
 using Tuat.Interfaces;
 using Tuat.Models;
 
@@ -7,265 +9,112 @@ namespace Tuat.StateMachineAutomation;
 [DisplayName("State Machine")]
 [Editor("Tuat.StateMachineAutomation.AutomationSettings", typeof(AutomationSettings))]
 [Editor("Tuat.StateMachineAutomation.Editor", typeof(Editor))]
-public class StateMachineHandler : IAutomationHandler
+public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, IAutomationHandler
 {
-    private Automation _automation;
-    private readonly IClientService _clientService;
-    private readonly IDataService _dataService;
-    private readonly IVariableService _variableService;
-    private readonly IMessageBusService _messageBusService;
+    public State? CurrentState { get; set; }
 
-    private AutomationProperties _automationProperties = new();
-
-    public Automation Automation => _automation;
-    private IScriptEngine? _engine;
-    private Guid _instance;
-    private IAutomationHandler? _subAutomationHandler = null;
-    private bool _isRunningAsSubAutomation = false;
-
-    private readonly object _lockEngineObject = new object();
-    private List<StateMachineEngineInfo> _engines = [];
-    private bool _readyForTriggers = false;
-
-    private static System.Text.Json.JsonSerializerOptions logJsonOptions = new System.Text.Json.JsonSerializerOptions
-    {
-        WriteIndented = true,
-        IncludeFields = true
-    };
-
-    public string? ErrorMessage { get; private set; }
-    public event EventHandler<List<AutomationOutputVariable>> OnAutomationFinished;
-    public event EventHandler<LogEntry> OnLogEntry;
-
-    private AutomationRunningState _runningState = AutomationRunningState.NotActive;
-    public AutomationRunningState RunningState
-    {
-        get => _runningState;
-        set
-        {
-            if (_runningState != value)
-            {
-                _runningState = value;
-                PublishAutomationStateInfo();
-            }
-        }
-    }
+    private List<DateTime> _scheduledTimes = [];
 
     public StateMachineHandler(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+        : base(automation, clientService, dataService, variableService, messageBusService)
     {
-        _automation = automation;
-        _clientService = clientService;
-        _dataService = dataService;
-        _variableService = variableService;
-        _messageBusService = messageBusService;
-
-        _automationProperties = GetAutomationProperties(automation.Data);
     }
 
-    public static AutomationProperties GetAutomationProperties(string? data)
+    protected override void RunProcess(IScriptEngine scriptEngine)
     {
-        if (!string.IsNullOrWhiteSpace(data))
+        //check cooling down
+        //if there is a loop with pass through transitions, it can cause high CPU usage
+        //for now: maximum of 10 runs in 2 seconds
+        var scheduleWindow = DateTime.UtcNow.AddSeconds(-2);
+        _scheduledTimes = _scheduledTimes.Where(t => t > scheduleWindow).ToList();
+        if (_scheduledTimes.Count > 10)
         {
-            return System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(data) ?? new();
+            return;
         }
-        return new();
-    }
 
-    public void PublishAutomationStateInfo()
-    {
-        var info = new AutomationStateInfo
+        _scheduledTimes.Add(DateTime.UtcNow);
+        if (CurrentState == null)
         {
-            AutomationId = Automation.Id,
-            AutomationRunningState = RunningState
-        };
-        _messageBusService.PublishAsync(info);
-    }
-
-    public void SetAutomationFinished(List<AutomationOutputVariable> OutputValues)
-    {
-        RunningState = AutomationRunningState.Finished;
-        OnAutomationFinished?.Invoke(this, OutputValues);
-    }
-
-    private void OnSubAutomationLogEntry(object? sender, LogEntry logEntry)
-    {
-        logEntry.Message = $"[{Automation.Name}].{logEntry.Message}";
-        logEntry.AutomationId = Automation.Id;
-        if (_isRunningAsSubAutomation)
-        {
-            OnLogEntry?.Invoke(this, logEntry);
+            ChangeState(scriptEngine, GetStartState());
+            return;
         }
-        else
+        var transitions = _automationProperties.Transitions.Where(t => t.FromStateId == CurrentState.Id).ToList();
+        if (transitions.Count == 0)
         {
-            _messageBusService.PublishAsync(logEntry);
+            RunningState = AutomationRunningState.Finished;
+            return;
         }
-    }
-
-    private void OnSubAutomationFinished(object? sender, List<AutomationOutputVariable> outputValues)
-    {
-        if (_subAutomationHandler != null && _engine != null)
+        foreach(var transition in transitions)
         {
-            var subAutomationResultParameters = (from subAutomationParameter in _subAutomationHandler.Automation.SubAutomationParameters
-                                                 from outputValue in outputValues.Where(x => x.Name == subAutomationParameter.Name).DefaultIfEmpty()
-                                                 where subAutomationParameter.IsOutput
-                                                 select new AutomationOutputVariable
-                                                 {
-                                                     Name = subAutomationParameter.ScriptVariableName,
-                                                     Value = outputValue == null ? subAutomationParameter.DefaultValue : outputValues.FirstOrDefault(x => x.Name == subAutomationParameter.Name)?.Value
-                                                 }).ToList();
-            if (subAutomationResultParameters.Any())
+            var result = scriptEngine.CallFunction<bool>(GetScriptTransitionMethodName(transition));
+            if (result)
             {
-                _engine.HandleSubAutomationOutputVariables(subAutomationResultParameters);
+                var nextState = _automationProperties.States.First(s => s.Id == transition.ToStateId);
+                ChangeState(scriptEngine, nextState);
+                return;
             }
         }
-        DisposeSubAutomation();
-        RequestTriggerProcess();
     }
 
-    public void StartSubAutomation(int automationId, List<AutomationInputVariable> InputValues)
+    protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null)
     {
-        DisposeSubAutomation();
+        CurrentState = null;
+        _scheduledTimes.Clear();
+        var startState = GetStartState();
 
-        var automation = _dataService.GetAutomations().First(x => x.Id == automationId);
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == automation.AutomationType)
-                   select a).FirstOrDefault();
+        var script = new StringBuilder();
 
-        var type = asm.GetTypes().First(x => x.FullName == automation.AutomationType);
-        _subAutomationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
-        _subAutomationHandler!.OnAutomationFinished += OnSubAutomationFinished;
-        _subAutomationHandler.OnLogEntry += OnSubAutomationLogEntry;
-        _subAutomationHandler.Start(_instance, InputValues);
-    }
-
-    public bool IsSubAutomationRunning()
-    {
-        return _subAutomationHandler != null && _subAutomationHandler.RunningState == AutomationRunningState.Active;
-    }
-
-    public Task AddLogAsync(string instanceId, object? logObject)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void DisposeEngines()
-    {
-        DisposeSubAutomation();
-        _engine?.Dispose();
-        _engine = null;
-    }
-
-    private void DisposeSubAutomation()
-    {
-        if (_subAutomationHandler != null)
+        foreach(var state in _automationProperties.States)
         {
-            _subAutomationHandler.OnLogEntry -= OnSubAutomationLogEntry;
-            _subAutomationHandler.OnAutomationFinished -= OnSubAutomationFinished;
-            _subAutomationHandler.Dispose();
-            _subAutomationHandler = null;
+            script.AppendLine(scriptEngine.GetDeclareFunction(GetScriptActionMethodName(state), body: state.EntryAction));
+        }
+
+        foreach (var transition in _automationProperties.Transitions)
+        {
+            var body = string.IsNullOrWhiteSpace(transition.Condition) ? scriptEngine.GetReturnTrueStatement() : transition.Condition;
+            script.AppendLine(scriptEngine.GetDeclareFunction(GetScriptTransitionMethodName(transition), returnValue: new IScriptEngine.FunctionReturnValue() { Nullable=false, Type=typeof(bool) }, body: body));
+        }
+
+        if (!string.IsNullOrWhiteSpace(_automationProperties.PreStartAction))
+        {
+            script.AppendLine(_automationProperties.PreStartAction);
+        }
+
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, script.ToString(), InputValues);
+    }
+
+    private void ChangeState(IScriptEngine scriptEngine, State state)
+    {
+        if (state != CurrentState)
+        {
+            CurrentState = state;
+            AddLogAsync($"Changed to state: {state.Name}");
+            scriptEngine.CallVoidFunction(GetScriptActionMethodName(state));
+            TriggerProcess();
         }
     }
 
-    public void Dispose()
+    private State GetStartState()
     {
-        Stop();
-    }
-
-    public string? ExecuteScript(string script)
-    {
-        throw new NotImplementedException();
-    }
-
-    public List<IScriptEngine.ScriptVariable> GetScriptVariables()
-    {
-        return [];
-    }
-
-    public Task Handle(List<VariableValueInfo> variableValueInfos)
-    {
-        RequestTriggerProcess();
-        return Task.CompletedTask;
-    }
-
-    public Task Handle(List<VariableInfo> variableInfos)
-    {
-        RequestTriggerProcess();
-        return Task.CompletedTask;
-    }
-
-    public void Restart()
-    {
-        Stop();
-        Start();
-    }
-
-    public void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null)
-    {
-        //todo
-    }
-
-    private void Stop()
-    {
-        _readyForTriggers = false;
-        lock (_lockEngineObject)
+        var startStates = _automationProperties.States.Where(s => s.IsStartState).ToList();
+        if (startStates.Count == 0)
         {
-            RunningState = AutomationRunningState.NotActive;
-            DisposeEngines();
+            throw new InvalidOperationException("Start state not found.");
         }
-    }
-
-
-    private long _triggering = 0;
-    private readonly object _triggerLock = new object();
-    private void RequestTriggerProcess()
-    {
-        var count = Interlocked.Read(ref _triggering);
-        if (count < 3)
+        else if (startStates.Count > 1)
         {
-            Interlocked.Increment(ref _triggering);
-            Task.Factory.StartNew(() =>
-            {
-                lock (_triggerLock)
-                {
-                    TriggerProcess();
-                }
-                Interlocked.Decrement(ref _triggering);
-            });
+            throw new InvalidOperationException("Multiple start states found.");
         }
+        return startStates[0];
     }
 
-    public void TriggerProcess()
+    private string GetScriptActionMethodName(State state)
     {
-        //todo
+        return $"state_action_{state.Id.ToString("N")}";
     }
 
-    public Task UpdateAsync(Automation automation)
+    private string GetScriptTransitionMethodName(Transition transition)
     {
-        Stop();
-        _automation = automation;
-        _automationProperties = GetAutomationProperties(automation.Data);
-        if (!_automation.IsSubAutomation)
-        {
-            Start();
-        }
-        return Task.CompletedTask;
-    }
-
-    public static IScriptEngine? GetScriptEngine(string scriptType)
-    {
-        IScriptEngine? scriptEngine = null;
-
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == scriptType)
-                   select a).FirstOrDefault();
-
-        if (asm == null)
-        {
-            return null;
-        }
-
-        var type = asm.GetTypes().First(x => x.FullName == scriptType);
-        scriptEngine = (IScriptEngine?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, null);
-        return scriptEngine;
+        return $"transition_{transition.Id.ToString("N")}";
     }
 }

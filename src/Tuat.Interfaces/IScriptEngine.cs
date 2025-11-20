@@ -23,6 +23,7 @@ public interface IScriptEngine : IDisposable
     string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null);
     void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null);
     void CallVoidFunction(string functionName, List<FunctionParameter>? functionParameters = null);
+    T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null);
     string GetReturnTrueStatement();
     void Execute(string script);
     object? Evaluate(string script);
