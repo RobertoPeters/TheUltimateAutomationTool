@@ -293,6 +293,12 @@ public abstract class BaseAutomationHandler<T> where T: new()
         _messageBusService.PublishAsync(new AutomationTriggered(Automation.Id));
     }
 
+    public void StopSubAutomation()
+    {
+        DisposeSubAutomation();
+    }
+
+
     protected virtual void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null)
     {
     }

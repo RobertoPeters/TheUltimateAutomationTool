@@ -136,6 +136,11 @@ internal class SystemMethods
         return _automationHandler.IsSubAutomationRunning();
     }
 
+    public void stopSubAutomation()
+    {
+        _automationHandler.StopSubAutomation();
+    }
+
     public static string SystemScript()
     {
         var script = new StringBuilder();
@@ -222,6 +227,11 @@ internal class SystemMethods
     // set the automation as finished and provide output values (array of { 'name': value })
     setAutomationFinished = function(outputValues) {
         return system.setAutomationFinished(outputValues)
+    }
+    
+    // stop the running sub-automation
+    stopSubAutomation = function() {
+        return system.stopSubAutomation()
     }
     
     """";

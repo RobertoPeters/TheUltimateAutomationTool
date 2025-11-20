@@ -90,8 +90,35 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
             CurrentState = state;
             AddLogAsync($"Changed to state: {state.Name}");
             scriptEngine.CallVoidFunction(GetScriptActionMethodName(state));
+            if (state.IsSubState)
+            {
+                StartSubAutomation(scriptEngine, state);
+            }
             TriggerProcess();
         }
+    }
+
+    private void StartSubAutomation(IScriptEngine scriptEngine, State state)
+    {
+        List<AutomationInputVariable> inputVariables = [];
+        if (state.SubStateParameters?.Any() == true)
+        {
+            var scriptVariables = scriptEngine.GetScriptVariables();
+            var subAutomationParameters = _dataService.GetAutomations()
+                    .First(x => x.Id == state.SubStateMachineId).SubAutomationParameters
+                    .Where(x => x.IsInput)
+                    .ToList();
+            foreach (var subStateVariable in state.SubStateParameters)
+            {
+                var subAutomationParameter = subAutomationParameters.FirstOrDefault(x => x.Id == subStateVariable.Id);
+                var scriptVariable = scriptVariables.FirstOrDefault(x => x.Name == subStateVariable.ScriptVariableName);
+                if (subAutomationParameter != null)
+                {
+                    inputVariables.Add(new AutomationInputVariable() { Name = subAutomationParameter.Name, Value = scriptVariable?.Value });
+                }
+            }
+        }
+        StartSubAutomation(state.SubStateMachineId!.Value, inputVariables);
     }
 
     private State GetStartState()

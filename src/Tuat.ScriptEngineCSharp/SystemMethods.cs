@@ -111,6 +111,12 @@ public class SystemMethods
     {
         return _automationHandler.IsSubAutomationRunning();
     }
+
+    public void StopSubAutomation()
+    {
+        _automationHandler.StopSubAutomation();
+    }
+
     public static string SystemScript()
     {
         var script = new StringBuilder();
@@ -209,6 +215,12 @@ public class SystemMethods
         return _systemMethods.IsSubAutomationRunning();
     }
 
+    // stop the running sub-automation
+    bool StopSubAutomation()
+    {
+        return _systemMethods.StopSubAutomation();
+    }
+    
     """";
 }
 
