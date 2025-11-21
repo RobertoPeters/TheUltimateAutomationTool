@@ -4,7 +4,7 @@ public interface IAutomationHandler : IDisposable
 {
     Models.Automation Automation { get; }
     void TriggerProcess();
-    void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null);
+    void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null);
     void Restart();
     Task AddLogAsync(string instanceId, object? logObject);
     Task UpdateAsync(Models.Automation automation);

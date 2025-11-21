@@ -20,7 +20,7 @@ public class FreeScriptHandler : BaseAutomationHandler<AutomationProperties>, IA
         scriptEngine.CallVoidFunction("schedule", null);
     }
 
-    protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null)
+    protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         var scheduleFunctionDeclaration = scriptEngine.GetDeclareFunction("schedule", null);
         if (string.IsNullOrWhiteSpace(_automationProperties.Script))
@@ -28,6 +28,6 @@ public class FreeScriptHandler : BaseAutomationHandler<AutomationProperties>, IA
             _automationProperties.Script = scheduleFunctionDeclaration;
         }
 
-        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, _automationProperties.Script, InputValues);
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, _automationProperties.Script, InputValues, topAutomationId);
     }
 }

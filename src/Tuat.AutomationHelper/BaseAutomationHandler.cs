@@ -15,6 +15,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
     private Guid _instance;
     private IAutomationHandler? _subAutomationHandler = null;
     private bool _isRunningAsSubAutomation = false;
+    private int? _topAutomation = null;
 
     private readonly object _lockEngineObject = new object();
     private bool _readyForTriggers = false;
@@ -91,7 +92,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
         _subAutomationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
         _subAutomationHandler!.OnAutomationFinished += OnSubAutomationFinished;
         _subAutomationHandler.OnLogEntry += OnSubAutomationLogEntry;
-        _subAutomationHandler.Start(_instance, InputValues);
+        _subAutomationHandler.Start(_instance, InputValues, topAutomationId: (_topAutomation ?? Automation.Id));
     }
 
     public bool IsSubAutomationRunning()
@@ -154,10 +155,11 @@ public abstract class BaseAutomationHandler<T> where T: new()
         Start();
     }
 
-    public void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null)
+    public void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         ErrorMessage = null;
         _readyForTriggers = false;
+        _topAutomation = topAutomationId;
         if (Automation.Enabled || Automation.IsSubAutomation)
         {
             lock (_lockEngineObject)
@@ -176,7 +178,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
                     try
                     {
                         _instance = instanceId ?? Guid.NewGuid();
-                        RunStart(scriptEngine, _instance, InputValues);
+                        RunStart(scriptEngine, _instance, InputValues, topAutomationId: topAutomationId);
                         RunningState = AutomationRunningState.Active;
                         RequestTriggerProcess();
                     }
@@ -299,7 +301,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
     }
 
 
-    protected virtual void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null)
+    protected virtual void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
     }
 

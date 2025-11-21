@@ -56,7 +56,7 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
         }
     }
 
-    protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null)
+    protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         CurrentState = null;
         _scheduledTimes.Clear();
@@ -80,7 +80,7 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
             script.AppendLine(_automationProperties.PreStartAction);
         }
 
-        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, script.ToString(), InputValues);
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, script.ToString(), InputValues, topAutomationId);
     }
 
     private void ChangeState(IScriptEngine scriptEngine, State state)

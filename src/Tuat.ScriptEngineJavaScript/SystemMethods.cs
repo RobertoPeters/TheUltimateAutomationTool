@@ -14,10 +14,11 @@ internal class SystemMethods
     private readonly IClientService _clientService;
     private readonly IDataService _dataService;
     private readonly ConcurrentDictionary<int, Client> _clients;
+    private readonly int? _topAutomationId;
 
     public record DateTimeInfo(int year, int month, int day, int hour, int minute, int second, int dayOfWeek);
 
-    public SystemMethods(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler)
+    public SystemMethods(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, int? topAutomationId)
     {
 
         _variableService = variableService;
@@ -25,6 +26,7 @@ internal class SystemMethods
         _clientService = clientService;
         _dataService = dataService;
         _clients = new ConcurrentDictionary<int, Client>(dataService.GetClients().ToDictionary(c => c.Id));
+        _topAutomationId = topAutomationId;
     }
 
     public void log(string instanceId, object? message)
@@ -55,7 +57,7 @@ internal class SystemMethods
                 stringMockingOptions.Add(mockingOption.JsValueToString(false));
             }
         }
-        return _variableService.CreateVariableAsync(name, clientId, isAutomationVariable ? _automationHandler.Automation.Id : null, persistant, data?.ToString(), stringMockingOptions).Result ?? -1;
+        return _variableService.CreateVariableAsync(name, clientId, isAutomationVariable ? (_topAutomationId ?? _automationHandler.Automation.Id) : null, persistant, data?.ToString(), stringMockingOptions).Result ?? -1;
     }
 
     public int? getVariableIdByName(string name, int clientId, bool isStateMachineVariable)
@@ -64,7 +66,7 @@ internal class SystemMethods
                 .GetVariables()
                 .FirstOrDefault(v => v.Variable.Name == name
                                     && v.Variable.ClientId == clientId
-                                    && (isStateMachineVariable && v.Variable.AutomationId == _automationHandler.Automation.Id || !isStateMachineVariable && v.Variable.AutomationId == null));
+                                    && (isStateMachineVariable && v.Variable.AutomationId == (_topAutomationId ?? _automationHandler.Automation.Id) || !isStateMachineVariable && v.Variable.AutomationId == null));
         return variable?.Variable.Id;
     }
 

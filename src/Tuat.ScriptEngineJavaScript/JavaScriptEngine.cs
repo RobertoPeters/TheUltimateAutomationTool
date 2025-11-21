@@ -18,7 +18,7 @@ public class JavaScriptEngine : IScriptEngine
     private IAutomationHandler? _automationHandler;
     private int startOfCustomVariableIndex;
 
-    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? inputValues = null)
+    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? inputValues = null, int? topAutomationId = null)
     {
         _clientService = clientService;
         _dataService = dataService;
@@ -26,7 +26,7 @@ public class JavaScriptEngine : IScriptEngine
         _automationHandler = automationHandler;
         _engine = new();
         startOfCustomVariableIndex = _engine.Global.GetOwnProperties().Count() + 2;
-        var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler);
+        var systemMethods = new SystemMethods(_clientService, _dataService, _variableService, _automationHandler, topAutomationId);
         _engine.SetValue("system", systemMethods);
         _engine.Execute(GetSystemScript(_clientService, instanceId, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: inputValues));
         if (!string.IsNullOrWhiteSpace(additionalScript))

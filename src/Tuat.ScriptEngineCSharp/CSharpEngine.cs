@@ -17,10 +17,10 @@ public class CSharpEngine : IScriptEngine
     ScriptState<object>? scriptState;
     Dictionary<string, (IScriptEngine.FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
 
-    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null)
+    public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
-        var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler);
+        var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler, topAutomationId);
         scriptApi._systemMethods = systemMethods;
         var systemScript = GetSystemScript(clientService, instanceId, additionalScript, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: InputValues);
         var options = ScriptOptions.Default
