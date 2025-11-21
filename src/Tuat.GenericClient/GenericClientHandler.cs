@@ -14,7 +14,7 @@ public class GenericClientHandler(Client _client, IVariableService _variableServ
 
     public List<(string methodName, bool isAutomationVariable, bool persistant, string description, string example)> CreateVariableOnClientMethods() => 
         [
-            ("CreateVariable", true, false, "Create a non persistant automation variable with data as default value. Return value is id of variable", "CreateVariable(\"testVar\")"),
+            ("createVariable", true, false, "Create a non persistant automation variable with data as default value. Return value is id of variable", "createVariable(\"testVar\")"),
         ];
 
     public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() => [];
