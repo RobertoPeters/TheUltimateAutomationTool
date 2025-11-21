@@ -1,0 +1,37 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IClientSettings
+
+<RadzenFormField Text="Filename *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@clientProperties!.Filename" Name="Filename" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Filename" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Sql statements on start" Variant="@Variant.Outlined">
+	<RadzenTextArea @bind-Value="@clientProperties!.OnStartQueries" Name="OnStartQueries" spellcheck="false" Rows="5" />
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public Client Model { get; set; } = null!;
+
+	private SqliteDatabaseClientHandler.ClientProperties clientProperties = new();
+
+	public string? GetClientPropertiesData() => System.Text.Json.JsonSerializer.Serialize(clientProperties);
+
+	protected override void OnInitialized()
+	{
+		if (!string.IsNullOrWhiteSpace(Model.Settings))
+		{
+			clientProperties = System.Text.Json.JsonSerializer.Deserialize<SqliteDatabaseClientHandler.ClientProperties>(Model.Settings) ?? new();
+		}
+		base.OnInitialized();
+	}
+
+}
+

@@ -32,7 +32,7 @@ public class MqttClientHandler(Client _client, IVariableService _variableService
 
     public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() =>
         [
-            ("mqttPublish", "publish", "Publish a MQTT variable.", """mqttPublish('mqttnet/samples/topic/2', 'on')""")
+            ("mqttPublish", "publish", "Publish a MQTT variable.", """mqttPublish(null, 'mqttnet/samples/topic/2', 'on')""")
         ];
 
     public async Task AddOrUpdateVariableInfoAsync(List<VariableInfo> variables)
