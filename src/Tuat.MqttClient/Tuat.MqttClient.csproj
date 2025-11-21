@@ -1,19 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Jint" />
-		<PackageReference Include="Radzen.Blazor" />
-		<PackageReference Include="BlazorMonaco" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<SupportedPlatform Include="browser" />
@@ -21,10 +12,16 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+		<PackageReference Include="Radzen.Blazor" />
+		<PackageReference Include="MQTTnet" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Folder Include="wwwroot\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
 	</ItemGroup>
 
 </Project>

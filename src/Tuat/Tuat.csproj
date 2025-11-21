@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
@@ -39,6 +38,7 @@
 		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
 		<ProjectReference Include="..\Tuat.MessageBus\Tuat.MessageBus.csproj" />
 		<ProjectReference Include="..\Tuat.Models\Tuat.Models.csproj" />
+		<ProjectReference Include="..\Tuat.MqttClient\Tuat.MqttClient.csproj" />
 		<ProjectReference Include="..\Tuat.Repository\Tuat.Repository.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineCSharp\Tuat.ScriptEngineCSharp.csproj" />
 		<ProjectReference Include="..\Tuat.ScriptEngineJavaScript\Tuat.ScriptEngineJavaScript.csproj" />

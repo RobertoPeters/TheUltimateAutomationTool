@@ -1,0 +1,49 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IClientSettings
+
+<RadzenFormField Text="Host *" Variant="@Variant.Outlined">
+    <ChildContent>
+        <RadzenTextBox @bind-Value="@clientProperties!.Host" Name="Host" Placeholder="test.mosquitto.org" spellcheck="false" />
+    </ChildContent>
+    <Helper>
+        <RadzenRequiredValidator Component="Host" Text="This field is required" />
+    </Helper>
+</RadzenFormField>
+<RadzenFormField Text="Tls" Variant="@Variant.Outlined">
+    <RadzenRadioButtonList @bind-Value="@clientProperties!.Tls" TValue="bool" class="rz-m-4 rz-mt-8">
+        <Items>
+            <RadzenRadioButtonListItem Text="Yes" Value="true" />
+            <RadzenRadioButtonListItem Text="No" Value="false" />
+        </Items>
+    </RadzenRadioButtonList>
+</RadzenFormField>
+<RadzenFormField Text="Username" Variant="@Variant.Outlined">
+    <RadzenTextBox @bind-Value="@clientProperties!.Username" Name="Username" Placeholder="Username" spellcheck="false" />
+</RadzenFormField>
+<RadzenFormField Text="Password" Variant="@Variant.Outlined">
+    <RadzenPassword @bind-Value="@clientProperties!.Password" Name="Password" />
+</RadzenFormField>
+
+
+@code {
+	[Parameter]
+	public Client Model { get; set; } = null!;
+
+	private MqttClientHandler.ClientProperties clientProperties = new();
+
+	public string? GetClientPropertiesData() => System.Text.Json.JsonSerializer.Serialize(clientProperties);
+
+	protected override void OnInitialized()
+	{
+		if (!string.IsNullOrWhiteSpace(Model.Settings))
+		{
+			clientProperties = System.Text.Json.JsonSerializer.Deserialize<MqttClientHandler.ClientProperties>(Model.Settings) ?? new();
+		}
+		base.OnInitialized();
+	}
+
+}
+
