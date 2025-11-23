@@ -228,9 +228,12 @@
         {
             _currentActiveNode?.Active = false;
             _currentActiveNode?.Refresh();
-            _currentActiveNode = _diagram.GetNode(currentState) as StateMachineStateNodeModel;
-            _currentActiveNode?.Active = true;
-            _currentActiveNode?.Refresh();
+            if (currentState != null)
+            {
+                _currentActiveNode = _diagram.GetNode(currentState) as StateMachineStateNodeModel;
+                _currentActiveNode?.Active = true;
+                _currentActiveNode?.Refresh();
+            }
         }
     }
 
@@ -469,16 +472,31 @@
             case 15:
                 await RedoAsync(_diagram);
                 break;
-            // case 20:
-            //     {
-            //         AddUndo();
-            //         var p = onContextPointerPosition ?? Diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
-            //         await AddInformationAsync((int)p.X, (int)p.Y);
-            //     }
-            //     break;
+            case 20:
+                {
+                    AddUndo();
+                    var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
+                    await AddInformationAsync((int)p.X, (int)p.Y);
+                }
+                break;
         }
 		onContextPointerPosition = null;
 		ContextMenuService.Close();
+    }
+
+    async Task AddInformationAsync(int x, int y)
+    {
+        SaveAutomationPropertiesToAutomation();
+        var information = await DialogService.ShowDialogAsync<AddOrEditInformationDialog, Information>("Add Information", dialog =>
+        {
+            dialog.Information = null;
+        });
+        if (information != null)
+        {
+            AddNewInformation(information, x, y);
+            RefreshInformations();
+            _diagram.Refresh();
+        }
     }
 
     Stream GetFileStream()
@@ -814,29 +832,52 @@
     async Task EditStateAsync(NodeModel node)
     {
         SaveAutomationPropertiesToAutomation();
-        var state = node.GetState(_automationProperties)!;
-        var result = await DialogService.ShowDialogAsync<AddOrEditStateDialog, State>($"Edit State: {state.Name}", dialog =>
+        if (node is StateMachineStateNodeModel stateNode)
         {
-            dialog.State = state;
-            dialog.ExistingStateNames = _automationProperties.States.Where(x => x.Id != state.Id).Select(x => x.Name).Distinct().ToHashSet();
-            dialog.Automation = Automation;
-			dialog.ScriptEditorType = ScriptEditorType;
-			dialog.ScriptEngine = _scriptEngine;
-        });
-        if (result != null)
-        {
-            AddUndo();
-            state.Name = result.Name;
-            state.Description = result.Description;
-            state.EntryAction = result.EntryAction;
-            state.IsErrorState = result.IsErrorState;
-            state.IsStartState = result.IsStartState;
-            state.IsSubState = result.IsSubState;
-            state.SubStateParameters = result.SubStateParameters;
-            state.SubStateMachineId = result.SubStateMachineId;
+            var state = node.GetState(_automationProperties)!;
+            var result = await DialogService.ShowDialogAsync<AddOrEditStateDialog, State>($"Edit State: {state.Name}", dialog =>
+            {
+                dialog.State = state;
+                dialog.ExistingStateNames = _automationProperties.States.Where(x => x.Id != state.Id).Select(x => x.Name).Distinct().ToHashSet();
+                dialog.Automation = Automation;
+                dialog.ScriptEditorType = ScriptEditorType;
+                dialog.ScriptEngine = _scriptEngine;
+            });
+            if (result != null)
+            {
+                AddUndo();
+                state.Name = result.Name;
+                state.Description = result.Description;
+                state.EntryAction = result.EntryAction;
+                state.IsErrorState = result.IsErrorState;
+                state.IsStartState = result.IsStartState;
+                state.IsSubState = result.IsSubState;
+                state.SubStateParameters = result.SubStateParameters;
+                state.SubStateMachineId = result.SubStateMachineId;
 
-            node.Title = state.Name;
-            node.Refresh();
+                node.Title = state.Name;
+                node.Refresh();
+            }
+        }
+    }
+
+    async Task EditInformationAsync(NodeModel node)
+    {
+        if (node is StateMachineInformationNodeModel infNode)
+        {
+            var information = node.GetInformation(_automationProperties)!;
+            var result = await DialogService.ShowDialogAsync<AddOrEditInformationDialog, Information>("Add Information", dialog =>
+            {
+                dialog.Information = information;
+            });
+            if (information != null)
+            {
+                AddUndo();
+                information.Description = result.Description;
+                information.Evaluation = result.Evaluation;
+                RefreshInformations();
+                node.Refresh();
+            }         
         }
     }
 
@@ -906,8 +947,41 @@
 
 	void RefreshInformations()
 	{
-		//todo
-	}
+        _automationProperties.Informations.ForEach(information =>
+        {
+            information.EvaluationResult = null;
+        });
+
+        if (!_automationProperties.Informations.Any(x => !string.IsNullOrWhiteSpace(x.Evaluation)))
+        {
+            return;
+        }
+
+        var allScriptVariables = _stateMachineHandler.GetScriptVariables();
+        foreach(var information in _automationProperties.Informations)
+        {
+            if (!string.IsNullOrWhiteSpace(information.Evaluation))
+            {
+                var varValue = allScriptVariables.FirstOrDefault(x => x.Name == information.Evaluation);
+                if (varValue == null)
+                {
+                    information.EvaluationResult = "unknown variable";
+                }
+                else if (varValue.Value == null)
+                {
+                    information.EvaluationResult = "null";
+                }
+                else if (varValue.Value.GetType() == typeof(string))
+                {
+                    information.EvaluationResult = $"'{varValue.Value}'";
+                }
+                else
+                {
+                    information.EvaluationResult = $"{varValue.Value}";
+                }
+            }
+        }
+    }
 
     void AddUIDataToStatesAndTransitions()
     {
@@ -1176,10 +1250,10 @@
         {
             await EditStateAsync(node);
         }
-        // else if (model is StateMachineInformationNodeModel infnode)
-        // {
-        //     await EditInformationAsync(infnode);
-        // }
+        else if (model is StateMachineInformationNodeModel infnode)
+        {
+            await EditInformationAsync(infnode);
+        }
         else if (model is LinkModel link)
         {
             await EditTransitionAsync(link);

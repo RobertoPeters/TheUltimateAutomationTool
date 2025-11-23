@@ -24,6 +24,11 @@ public static class UIEventRegistrationMessageHandler
         uiEventRegistration.Handle(variableInfo);
     }
 
+    public static void Handle(VariableInfo variableInfo, IUIEventRegistration uiEventRegistration)
+    {
+        uiEventRegistration.Handle([variableInfo]);
+    }
+
     public static void Handle(List<VariableValueInfo> variableValueInfo, IUIEventRegistration uiEventRegistration)
     {
         uiEventRegistration.Handle(variableValueInfo);
