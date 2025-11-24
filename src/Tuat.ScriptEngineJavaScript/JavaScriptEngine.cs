@@ -83,7 +83,7 @@ public class JavaScriptEngine : IScriptEngine
         result.Append($"{functionName}(");
         if (functionParameters?.Any() == true)
         {
-            string.Join(", ", functionParameters.Select(p => p.Name));
+            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
         }
         result.AppendLine(")");
         _engine?.Execute(result.ToString());
@@ -95,7 +95,7 @@ public class JavaScriptEngine : IScriptEngine
         result.Append($"{functionName}(");
         if (functionParameters?.Any() == true)
         {
-            string.Join(", ", functionParameters.Select(p => p.Name));
+            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
         }
         result.AppendLine(")");
         return (T?)Evaluate(result.ToString());
