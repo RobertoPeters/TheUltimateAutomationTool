@@ -11,8 +11,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LuaCSharp" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+		<PackageReference Include="MoonSharp" />
 		<PackageReference Include="Radzen.Blazor" />
 		<PackageReference Include="BlazorMonaco" />
 	</ItemGroup>
