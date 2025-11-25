@@ -1,0 +1,54 @@
+﻿@using BlazorMonaco.Editor
+@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IScriptEditor
+
+<style>
+	.my-editor-class {
+		height: @(string.IsNullOrWhiteSpace(Height) ? "85vh" : Height);
+	}
+</style>
+
+<StandaloneCodeEditor @ref="standaloneCodeEditor"
+                        CssClass="my-editor-class"
+                        ConstructionOptions="EditorConstructionOptions" />
+
+
+@code {
+	[Parameter]
+	public string? Script { get; set; }
+
+	[Parameter]
+	public string? Height { get; set; }
+
+	[Parameter]
+	public bool ReadOnly { get; set; }
+
+	private StandaloneCodeEditor? standaloneCodeEditor;
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+		{
+			AutomaticLayout = true,
+			Language = "python",
+			Value = Script,
+			ReadOnly = ReadOnly
+		};
+	}
+
+	public async Task<string?> GetScriptAsync()
+	{
+		return await standaloneCodeEditor!.GetValue();
+	}
+
+	public async Task SetScriptAsync(string? text)
+	{
+		Script = text ?? "";
+		await standaloneCodeEditor!.SetValue(Script);
+	}
+
+}
+
