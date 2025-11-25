@@ -106,11 +106,11 @@ public class PythonScriptEngine : IScriptEngine
         {
             if (functionParameters?.Any() != true)
             {
-                _pythonFunc[functionName].Invoke();
+                using (var pyresult = _pythonFunc[functionName].Invoke());
             }
             else
             {
-                _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray());
+                using (var pyresult = _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray())) ;
             }
         }
     }
@@ -119,16 +119,22 @@ public class PythonScriptEngine : IScriptEngine
     {
         using (Py.GIL())
         {
-            var result = PyObject.None;
+            T result = default;
             if (functionParameters?.Any() != true)
             {
-                result = _pythonFunc[functionName].Invoke();
+                using (var pyresult = _pythonFunc[functionName].Invoke())
+                {
+                     result = pyresult.As<T>();
+                }
             }
             else
             {
-                result = _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray());
+                using (var pyresult = _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray()))
+                {
+                      result = pyresult.As<T>();
+                }
             }
-            return result.As<T>();
+            return result;
         }
     }
 
