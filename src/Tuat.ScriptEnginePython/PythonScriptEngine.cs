@@ -17,6 +17,8 @@ public class PythonScriptEngine : IScriptEngine
     private IDataService? _dataService;
     private IVariableService? _variableService;
     private IAutomationHandler? _automationHandler;
+    Dictionary<string, (IScriptEngine.FunctionReturnValue? returnValue, List<IScriptEngine.FunctionParameter>? functionParameters)> scriptMethodProtoTypes = new();
+    Dictionary<string, PyObject> _pythonFunc = new();
 
     static PythonScriptEngine()
     {
@@ -44,12 +46,17 @@ public class PythonScriptEngine : IScriptEngine
             }
             _engine.Set("_systemMethods", systemMethods);
             _engine.Exec(systemScript.ToString());
+            foreach (var scriptMethodProtoType in scriptMethodProtoTypes)
+            {
+                var pyFunc = _engine.Get(scriptMethodProtoType.Key);
+                _pythonFunc.Add(scriptMethodProtoType.Key, pyFunc);
+            }
         }
     }
 
     public string GetReturnTrueStatement()
     {
-        return "return true";
+        return "return True";
     }
 
     public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
@@ -73,9 +80,24 @@ public class PythonScriptEngine : IScriptEngine
         }
     }
 
-    public List<IScriptEngine.ScriptVariable> GetScriptVariables()
+    public List<IScriptEngine.ScriptVariable> GetScriptVariables() 
     {
         return [];
+        //using (Py.GIL()) 
+        //{ 
+        //     var result = _engine!.Variables()
+        //        .Keys()
+        //        .Where(k => k.As<string>() != "_systemMethods")
+        //        .Select(k => 
+        //        { 
+        //            var name = k.As<string>(); 
+        //            using var pyVal = _engine.Get(name); 
+        //            object? managed = pyVal.IsNone() ? null : pyVal.As<object>(); 
+        //            return new IScriptEngine.ScriptVariable(name, managed); 
+        //        }).ToList();
+
+        //    return result; //result.Where(x => x.Name != null).ToList();
+        //} 
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
@@ -84,48 +106,66 @@ public class PythonScriptEngine : IScriptEngine
         {
             if (functionParameters?.Any() != true)
             {
-                _engine!.Exec($"{functionName}()");
+                _pythonFunc[functionName].Invoke();
             }
             else
             {
-                //_engine!.Call(_engine.Globals[functionName], functionParameters.Select(x => x.Value).ToArray());
+                _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray());
             }
         }
     }
 
     public T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null)
     {
-        return default;
-        //if (functionParameters?.Any() != true)
-        //{
-        //    var result = _engine!.Call(_engine.Globals[functionName]);
-        //    return (T)result.ToObject();
-        //}
-        //else
-        //{
-        //    var result = _engine!.Call(_engine.Globals[functionName], functionParameters.Select(x => x.Value).ToArray());
-        //    return (T)result.ToObject();
-        //}
+        using (Py.GIL())
+        {
+            var result = PyObject.None;
+            if (functionParameters?.Any() != true)
+            {
+                result = _pythonFunc[functionName].Invoke();
+            }
+            else
+            {
+                result = _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray());
+            }
+            return result.As<T>();
+        }
     }
 
     public void Execute(string script)
     {
-        throw new NotSupportedException();
+        using (Py.GIL())
+        {
+            _engine!.Exec(script);
+        }
     }
 
     public object? Evaluate(string script)
     {
-        throw new NotSupportedException();
+        using (Py.GIL())
+        {
+            return _engine!.Exec(script)?.As<object>();
+        }
     }
 
     public void Dispose()
     {
-        _engine?.Dispose();
+        using (Py.GIL())
+        {
+            foreach (var pyObj in _pythonFunc.Values)
+            {
+                pyObj.Dispose();
+            }
+            _engine?.Dispose();
+        }
+        _pythonFunc.Clear();
         _engine = null;
     }
 
     public string GetDeclareFunction(string functionName, IScriptEngine.FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
+        scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
+
         var result = new StringBuilder();
         result.Append($"def {functionName}(");
         if (functionParameters?.Any() == true)
@@ -133,9 +173,18 @@ public class PythonScriptEngine : IScriptEngine
             string.Join(", ", functionParameters.Select(p => p.Name));
         }
         result.AppendLine("):");
-        if (body != null)
+        if (!string.IsNullOrWhiteSpace(body))
         {
-            //result.AppendLine(body);
+            var lines = body.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            string indent = "";
+            if (!lines[0].StartsWith(" "))
+            {
+                indent = "    ";
+            }
+            foreach (var line in lines)
+            {
+                result.AppendLine($"{indent}{line}");
+            }
         }
         return result.ToString();
     }
@@ -151,6 +200,71 @@ public class PythonScriptEngine : IScriptEngine
         script.AppendLine(SystemMethods.SystemScript());
         script.AppendLine();
 
+        var clients = clientService.GetClients();
+        List<string> clientTypesHandled = [];
+        foreach (var client in clients)
+        {
+            if (clientTypesHandled.Contains(client.Client.ClientType))
+            {
+                continue;
+            }
+
+            var createVariableMethods = client.CreateVariableOnClientMethods();
+            var createExecuteMethods = client.CreateExecuteOnClientMethods();
+            if (createVariableMethods.Any() || createExecuteMethods.Any())
+            {
+                script.AppendLine("#===================================================");
+                script.AppendLine($"# client helper methods for {client.Client.Name}");
+                script.AppendLine("#===================================================");
+
+                foreach (var method in createVariableMethods)
+                {
+                    script.AppendLine($"""#{method.description}""");
+                    script.AppendLine($"""#{method.example}""");
+                    script.AppendLine($"""def {method.methodName}(name, data=None, mockingOptions=None, clientId=None):""");
+                    script.AppendLine($"  if clientId == None:");
+                    script.AppendLine($"     clientId = {client.Client.Id}");
+                    script.AppendLine($"  return createVariableOnClient(name, clientId, {(method.isAutomationVariable ? "True" : "False")},  {(method.persistant ? "True" : "False")}, data, mockingOptions)");
+                    script.AppendLine();
+                }
+
+                foreach (var method in createExecuteMethods)
+                {
+                    script.AppendLine($"""#{method.description}""");
+                    script.AppendLine($"""#{method.example}""");
+                    script.AppendLine($"""def {method.methodName}(variableId=None, parameter1=None, parameter2=None, parameter3=None, clientId=None):""");
+                    script.AppendLine($"  if clientId == None:");
+                    script.AppendLine($"     clientId = {client.Client.Id}");
+                    script.AppendLine($"  return executeOnClient(clientId, variableId, '{method.command}', parameter1, parameter2, parameter3)");
+                    script.AppendLine();
+                }
+            }
+        }
+
+        script.AppendLine();
+        subAutomationParameters?.ForEach(p =>
+        {
+            var inputVar = inputValues?.FirstOrDefault(x => string.Compare(x.Name, p.Name, true) == 0);
+            if (inputVar != null)
+            {
+                if (inputVar.Value == null)
+                {
+                    script.AppendLine($"{p.ScriptVariableName} = null");
+                }
+                else if (inputVar.Value is string v)
+                {
+                    script.AppendLine($"{p.ScriptVariableName} = \"{inputVar.Value}\"");
+                }
+                else
+                {
+                    script.AppendLine($"{p.ScriptVariableName} = {inputVar.Value!.ToString()?.Replace(",", ".")}");
+                }
+            }
+            else
+            {
+                script.AppendLine($"{p.ScriptVariableName} = {p.DefaultValue}");
+            }
+        });
 
         return script.ToString();
     }
