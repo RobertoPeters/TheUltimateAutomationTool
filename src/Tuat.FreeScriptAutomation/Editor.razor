@@ -52,8 +52,8 @@
 		{
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
-		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", "85vh" } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", "85vh" }, { "ReadOnly", true } };
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", Height ?? "85vh" } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
 		await base.OnInitializedAsync();
 	}
 
