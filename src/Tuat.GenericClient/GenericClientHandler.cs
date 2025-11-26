@@ -18,9 +18,20 @@ public class GenericClientHandler(Client _client, IVariableService _variableServ
         ];
 
     public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() => [];
-    public Task AddOrUpdateVariableInfoAsync(List<VariableInfo> variables)
+    public async Task AddOrUpdateVariableInfoAsync(List<VariableInfo> variables)
     {
-        return Task.CompletedTask;
+        List<(int variableId, string? value)>? variableValuesToSet = null;
+        //check if the default value should be set
+        foreach (var variableInfo in variables)
+        {
+            // set the default value if there is no value
+            variableValuesToSet ??= [];
+            variableValuesToSet.Add((variableInfo.Variable.Id, variableInfo.Variable.Data));
+        }
+        if (variableValuesToSet != null)
+        {
+            await _variableService.SetVariableValuesAsync(variableValuesToSet);
+        }
     }
 
     public Task DeleteVariableInfoAsync(List<VariableInfo> variables)

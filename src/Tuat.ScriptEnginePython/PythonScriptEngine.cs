@@ -61,43 +61,41 @@ public class PythonScriptEngine : IScriptEngine
 
     public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
     {
-        foreach (var variable in outputVariables)
+        using (Py.GIL())
         {
-            string valueText = "";
-            if (variable.Value == null)
+            foreach (var variable in outputVariables)
             {
-                valueText = "null";
+                _engine!.Set(variable.Name, variable.Value);
             }
-            else if (variable.Value is string)
-            {
-                valueText = $"\"{variable.Value}\"";
-            }
-            else
-            {
-                valueText = variable.Value.ToString()!.Replace(",", ".");
-            }
-            Execute($"{variable.Name} = {valueText}");
         }
     }
 
     public List<IScriptEngine.ScriptVariable> GetScriptVariables() 
     {
-        return [];
-        //using (Py.GIL()) 
-        //{ 
-        //     var result = _engine!.Variables()
-        //        .Keys()
-        //        .Where(k => k.As<string>() != "_systemMethods")
-        //        .Select(k => 
-        //        { 
-        //            var name = k.As<string>(); 
-        //            using var pyVal = _engine.Get(name); 
-        //            object? managed = pyVal.IsNone() ? null : pyVal.As<object>(); 
-        //            return new IScriptEngine.ScriptVariable(name, managed); 
-        //        }).ToList();
-
-        //    return result; //result.Where(x => x.Name != null).ToList();
-        //} 
+        List<IScriptEngine.ScriptVariable> result = [];
+        using (Py.GIL())
+        {
+            using var variables = _engine!.Variables();
+            foreach (var variable in variables)
+            {
+                var name = variable.ToString() ?? "";
+                using var val = _engine.Get(name);
+                using var pyType = val.GetPythonType();
+                if (pyType.Name == "str")
+                {
+                    result.Add(new ScriptVariable(name, val.As<string>()));
+                }
+                else if (pyType.Name == "int")
+                {
+                    result.Add(new ScriptVariable(name, val.As<long>()));
+                }
+                else if (pyType.Name == "float")
+                {
+                    result.Add(new ScriptVariable(name, val.As<double>()));
+                }
+            }
+        }
+        return result;
     }
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
@@ -106,11 +104,11 @@ public class PythonScriptEngine : IScriptEngine
         {
             if (functionParameters?.Any() != true)
             {
-                using (var pyresult = _pythonFunc[functionName].Invoke());
+                using (_pythonFunc[functionName].Invoke()) ;
             }
             else
             {
-                using (var pyresult = _pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray())) ;
+                using (_pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray())) ;
             }
         }
     }
@@ -150,7 +148,15 @@ public class PythonScriptEngine : IScriptEngine
     {
         using (Py.GIL())
         {
-            return _engine!.Exec(script)?.As<object>();
+            try
+            {
+                return _engine!.Eval<object>(script);
+            }
+            catch
+            {
+                Execute(script);
+                return "";
+            }
         }
     }
 

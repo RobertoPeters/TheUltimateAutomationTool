@@ -30,6 +30,11 @@ public class SystemMethods
 
     public void Log(string instanceId, object? message)
     {
+        if (message is PyObject pyObject)
+        {
+            message = pyObject.ToString();
+            pyObject.Dispose();
+        }
         _automationHandler.AddLogAsync(instanceId, message);
     }
 
@@ -54,8 +59,20 @@ public class SystemMethods
             foreach (var mockingOption in mockingOptions)
             {
                 stringMockingOptions.Add(mockingOption?.ToString() ?? "");
+
+                if (mockingOption is PyObject pyOption)
+                {
+                    pyOption.Dispose();
+                }
             }
         }
+
+        if (data is PyObject pyObject)
+        {
+            data = pyObject.ToString();
+            pyObject.Dispose();
+        }
+
         return _variableService.CreateVariableAsync(name, clientId, isAutomationVariable ? (_topAutomationId ?? _automationHandler.Automation.Id) : null, persistant, data?.ToString(), stringMockingOptions).Result ?? -1;
     }
 

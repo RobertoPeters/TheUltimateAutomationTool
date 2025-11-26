@@ -191,7 +191,7 @@ else
 		InvokeAsync(() =>
 		{
 			scriptVariables = AutomationHandler.GetScriptVariables();
-			variablesGrid?.Reload();
+			variablesGrid?.RefreshDataAsync();
 			StateHasChanged();
 		});
 
