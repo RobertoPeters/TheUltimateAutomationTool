@@ -30,12 +30,7 @@ public class SystemMethods
 
     public void Log(string instanceId, object? message)
     {
-        if (message is PyObject pyObject)
-        {
-            message = pyObject.ToString();
-            pyObject.Dispose();
-        }
-        _automationHandler.AddLogAsync(instanceId, message);
+        _automationHandler.AddLogAsync(instanceId, message.FromPyObject());
     }
 
     public DateTimeInfo GetCurrentDateTime()
@@ -58,22 +53,11 @@ public class SystemMethods
             stringMockingOptions = [];
             foreach (var mockingOption in mockingOptions)
             {
-                stringMockingOptions.Add(mockingOption?.ToString() ?? "");
-
-                if (mockingOption is PyObject pyOption)
-                {
-                    pyOption.Dispose();
-                }
+                stringMockingOptions.Add(mockingOption?.FromPyObject()?.ToString() ?? "");
             }
         }
 
-        if (data is PyObject pyObject)
-        {
-            data = pyObject.ToString();
-            pyObject.Dispose();
-        }
-
-        return _variableService.CreateVariableAsync(name, clientId, isAutomationVariable ? (_topAutomationId ?? _automationHandler.Automation.Id) : null, persistant, data?.ToString(), stringMockingOptions).Result ?? -1;
+        return _variableService.CreateVariableAsync(name, clientId, isAutomationVariable ? (_topAutomationId ?? _automationHandler.Automation.Id) : null, persistant, data?.FromPyObject()?.ToString(), stringMockingOptions).Result ?? -1;
     }
 
     public int? GetVariableIdByName(string name, int clientId, bool isStateMachineVariable)
@@ -115,7 +99,7 @@ public class SystemMethods
 
     public bool ClientExecute(int clientId, int? variableId, string command, object? parameter1, object? parameter2, object? parameter3)
     {
-        return _clientService.ExecuteAsync(clientId, variableId, command, parameter1, parameter2, parameter3).Result;
+        return _clientService.ExecuteAsync(clientId, variableId, command, parameter1.FromPyObject(), parameter2.FromPyObject(), parameter3.FromPyObject()).Result;
     }
 
     public void SetAutomationFinished(List<AutomationOutputVariable> outputValues)
@@ -154,9 +138,9 @@ public class SystemMethods
        _systemMethods.Log(instanceId, message)
     
     def currentTimeBetween(startTime, endTime, includeBoundary=True):
-        #e.g. currentTimeBetween('8:00', '18:00', true)
-        # currentTimeBetween('22:00', '4:00', True)
-        # currentTimeBetween('22:00', '0:30', True)
+        #e.g. currentTimeBetween("8:00", "18:00", true)
+        # currentTimeBetween("22:00", "4:00", True)
+        # currentTimeBetween("22:00", "0:30", True)
         #it used the 24h clock format without leading zeros
         #returns true if the current time is between startTime and endTime (inclusive or exclusive depending on includeBoundary)
         return _systemMethods.CurrentTimeBetween(startTime, endTime, includeBoundary)
@@ -169,12 +153,12 @@ public class SystemMethods
         return _systemMethods.GetAutomationId(name)
     
     #execute specific client commands (false if it fails)
-    #e.g. executeOnClient(clientIdOfHomeAssistant, null, 'callservice', 'light', 'turn_on', { "entity_id": "light.my_light", "brightness_pct": 20})
+    #e.g. executeOnClient(clientIdOfHomeAssistant, null, "callservice", "light", "turn_on", { "entity_id": "light.my_light", "brightness_pct": 20})
     def executeOnClient(clientId, variableId, command, parameter1=None, parameter2=None, parameter3=None):
         return _systemMethods.ClientExecute(clientId, variableId, command, parameter1, parameter2, parameter3)
     
     # creates a variable and returns the variable id (-1 if it fails)
-    # e.g. createVariable('test', clientId, True, True, 'initialValue', ['option1', 'option2'])
+    # e.g. createVariable('test', clientId, True, True, 'initialValue', ["option1", "option2"])
     def createVariableOnClient(name, clientId, isAutomationVariable=True, persistant=False, data=None, mockingOptions=None):
         return _systemMethods.CreateVariable(name, clientId, isAutomationVariable, persistant, data, mockingOptions)
     

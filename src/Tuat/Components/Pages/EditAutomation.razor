@@ -190,7 +190,19 @@ else
 
 		InvokeAsync(() =>
 		{
-			scriptVariables = AutomationHandler.GetScriptVariables();
+			var updatedScriptVariables = AutomationHandler.GetScriptVariables();
+			foreach(var updatedVar in updatedScriptVariables)
+			{
+				var existingVar = scriptVariables.FirstOrDefault(v => v.Name == updatedVar.Name);
+				if (existingVar != null)
+				{
+					existingVar.Value = updatedVar.Value;
+				}
+				else
+				{
+					scriptVariables.Add(updatedVar);
+				}
+			}
 			variablesGrid?.RefreshDataAsync();
 			StateHasChanged();
 		});

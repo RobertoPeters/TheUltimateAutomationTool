@@ -93,6 +93,10 @@ public class PythonScriptEngine : IScriptEngine
                 {
                     result.Add(new ScriptVariable(name, val.As<double>()));
                 }
+                else if (pyType.Name == "bool")
+                {
+                    result.Add(new ScriptVariable(name, val.As<bool>()));
+                }
             }
         }
         return result;
@@ -150,7 +154,8 @@ public class PythonScriptEngine : IScriptEngine
         {
             try
             {
-                return _engine!.Eval<object>(script);
+                var result = _engine!.Eval<object>(script);
+                return result.FromPyObject();
             }
             catch
             {

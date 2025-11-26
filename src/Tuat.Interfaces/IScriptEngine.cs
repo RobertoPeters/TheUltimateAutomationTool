@@ -18,7 +18,11 @@ public interface IScriptEngine : IDisposable
         public bool Nullable { get; set; }
     }
 
-    public record ScriptVariable(string Name, object? Value);
+    public class ScriptVariable(string Name, object? Value)
+    {
+        public string Name { get; set; } = Name;
+        public object? Value { get; set; } = Value;
+    }
 
     string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null);
     void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null);
