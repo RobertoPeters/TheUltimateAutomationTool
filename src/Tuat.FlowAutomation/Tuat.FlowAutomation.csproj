@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<NoWarn>BL0005</NoWarn>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+		<PackageReference Include="Radzen.Blazor" />
+		<PackageReference Include="WolverineFx" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="wwwroot\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Blazor.Diagrams\Blazor.Diagrams\Blazor.Diagrams.csproj" />
+		<ProjectReference Include="..\Tuat.AutomationHelper\Tuat.AutomationHelper.csproj" />
+		<ProjectReference Include="..\Tuat.Dialogs\Tuat.Dialogs.csproj" />
+		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
+	</ItemGroup>
+	
+</Project>

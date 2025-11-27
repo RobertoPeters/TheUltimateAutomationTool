@@ -1,0 +1,46 @@
+﻿@using Radzen.Blazor
+@using Tuat.Dialogs
+@using Tuat.Interfaces
+@inject Tuat.Interfaces.IClientService ClientService
+
+@if (ScriptEditorType != null)
+{
+	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
+		<RadzenSplitterPane Min="10px">
+			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
+		</RadzenSplitterPane>
+		<RadzenSplitterPane Size="300px" Min="10px">
+			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
+		</RadzenSplitterPane>
+	</RadzenSplitter>
+}
+
+@code {
+	[Parameter]
+	public string Height { get; set; } = "200px";
+
+	[Parameter]
+	public string? Script { get; set; }
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	Dictionary<string, object?>? EditorPropertiesParameters;
+	Dictionary<string, object?>? SystemScriptParameters;
+	DynamicComponent? scriptEditor;
+
+	protected override async Task OnInitializedAsync()
+	{
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Script }, { "Height", Height } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", ScriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", Height }, { "ReadOnly", true } };
+		await base.OnInitializedAsync();
+	}
+
+	public async Task<string?> GetScriptAsync()
+	{
+		return await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync();
+	}
+}

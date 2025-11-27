@@ -1,0 +1,66 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Models
+@inject Tuat.Interfaces.IDataService DataService
+
+
+<RadzenFormField Text="Variable name *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@Model!.VariableName" Name="VariableName" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="VariableName" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Client *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenDropDown Data="_clients" @bind-Value="@Model!.ClientName" Name="ClientName" ValueProperty="@nameof(Client.Name)" TextProperty="@nameof(Client.Name)" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="ClientName" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Is global variabe" Variant="@Variant.Outlined">
+	<RadzenRadioButtonList @bind-Value="@Model!.IsGlobalVariable" TValue="bool" class="rz-m-4 rz-mt-8">
+		<Items>
+			<RadzenRadioButtonListItem Text="Yes" Value="true" />
+			<RadzenRadioButtonListItem Text="No" Value="false" />
+		</Items>
+	</RadzenRadioButtonList>
+</RadzenFormField>
+<RadzenFormField Text="Persistant" Variant="@Variant.Outlined">
+	<RadzenRadioButtonList @bind-Value="@Model!.IsPersistant" TValue="bool" class="rz-m-4 rz-mt-8">
+		<Items>
+			<RadzenRadioButtonListItem Text="Yes" Value="true" />
+			<RadzenRadioButtonListItem Text="No" Value="false" />
+		</Items>
+	</RadzenRadioButtonList>
+</RadzenFormField>
+<RadzenFormField Text="Data" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.Data" Name="Data" spellcheck="false" />
+</RadzenFormField>
+<RadzenFormField Text="Mocking values" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.MockingValues" Name="MockingValues" spellcheck="false" Placeholder="[0, 10]" />
+</RadzenFormField>
+<RadzenFormField Text="Payload on start" Variant="@Variant.Outlined">
+	<RadzenRadioButtonList @bind-Value="@Model!.PayloadOnStart" TValue="bool" class="rz-m-4 rz-mt-8">
+		<Items>
+			<RadzenRadioButtonListItem Text="Yes" Value="true" />
+			<RadzenRadioButtonListItem Text="No" Value="false" />
+		</Items>
+	</RadzenRadioButtonList>
+</RadzenFormField>
+
+
+@code {
+	[Parameter]
+	public StepVariableValue Model { get; set; } = null!;
+
+	List<Client> _clients = null!;
+
+	protected override void OnInitialized()
+	{
+		_clients = DataService.GetClients();
+	}
+
+}

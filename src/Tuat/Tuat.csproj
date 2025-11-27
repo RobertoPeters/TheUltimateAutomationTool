@@ -32,6 +32,7 @@
 		<ProjectReference Include="..\Tuat.Clients\Tuat.Clients.csproj" />
 		<ProjectReference Include="..\Tuat.Data\Tuat.Data.csproj" />
 		<ProjectReference Include="..\Tuat.Dialogs\Tuat.Dialogs.csproj" />
+		<ProjectReference Include="..\Tuat.FlowAutomation\Tuat.FlowAutomation.csproj" />
 		<ProjectReference Include="..\Tuat.FreeScriptAutomation\Tuat.FreeScriptAutomation.csproj" />
 		<ProjectReference Include="..\Tuat.GenericClient\Tuat.GenericClient.csproj" />
 		<ProjectReference Include="..\Tuat.HAClient\Tuat.HAClient.csproj" />

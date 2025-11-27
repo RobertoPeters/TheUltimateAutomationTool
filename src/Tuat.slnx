@@ -12,6 +12,7 @@
   <Project Path="Tuat.Clients/Tuat.Clients.csproj" Id="5f1de019-028f-4cc5-95ed-4aff1340306a" />
   <Project Path="Tuat.Data/Tuat.Data.csproj" Id="4dfa9ef2-14d8-419e-8b3b-d9171a2bf546" />
   <Project Path="Tuat.Dialogs/Tuat.Dialogs.csproj" Id="fb8ca842-1a89-459c-9190-4f19dfe597f7" />
+  <Project Path="Tuat.FlowAutomation/Tuat.FlowAutomation.csproj" Id="9462661e-2dec-40ed-8511-9b5b5c200e04" />
   <Project Path="Tuat.FreeScriptAutomation/Tuat.FreeScriptAutomation.csproj" Id="61266fff-0456-454d-83ea-9f1e34701bab" />
   <Project Path="Tuat.GenericClient/Tuat.GenericClient.csproj" Id="04d511e2-171f-4260-b3e0-97bb8b966e4b" />
   <Project Path="Tuat.HAClient/Tuat.HAClient.csproj" Id="1185cf49-de5f-401a-8c2d-590013e9fd7d" />
