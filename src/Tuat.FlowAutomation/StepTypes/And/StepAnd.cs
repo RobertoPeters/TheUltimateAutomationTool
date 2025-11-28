@@ -17,7 +17,7 @@ public class StepAnd: Step
         return Task.CompletedTask;
     }
 
-    public override Task ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         if (!inputPayloads.TryGetValue(Blazor.Diagrams.Core.Models.PortAlignment.Left, out var payloads))
         {
@@ -28,12 +28,15 @@ public class StepAnd: Step
             Payloads[0].Data = null;
         }
         var result = payloads!.Any(x => x.Data == null
-                || x.Data?.ToString()?.ToLower() == "off" 
-                || x.Data?.ToString()?.ToLower() == "false" 
-                || x.Data?.ToString()?.ToLower() == "0");
+                || x.Data.ToString()?.ToLower() == "off" 
+                || x.Data.ToString()?.ToLower() == "false" 
+                || x.Data.ToString()?.ToLower() == "0");
 
-        Payloads[0].Data = result ? null : true;
-        return Task.CompletedTask;
+        if (Payloads[0].UpdateData(result ? null : true))
+        {
+            return Task.FromResult<List<Blazor.Diagrams.Core.Models.PortAlignment>>([Blazor.Diagrams.Core.Models.PortAlignment.Right]);
+        }
+        return Task.FromResult<List<Blazor.Diagrams.Core.Models.PortAlignment>>([]);
     }
 
 }

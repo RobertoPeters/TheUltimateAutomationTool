@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.ComponentModel;
+using System.Linq;
 using Tuat.AutomationHelper;
 using Tuat.Interfaces;
 using Tuat.Models;
@@ -44,21 +46,47 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
     {
         foreach (var step in _steps)
         {
-            Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads = [];
-            foreach (var inputPort in step.InputPorts)
-            {
-                var payloads = from t in _automationProperties.Transitions
-                               where t.ToStepId == step.Id && t.ToStepPort == inputPort
-                               join s in _steps on t.FromStepId equals s.Id
-                               from p in s.Payloads
-                               where p.Port == t.FromStepPort
-                               select p;
-
-                inputPayloads.Add(inputPort, payloads.ToList());
-            }
-            step.ProcessAsync(inputPayloads, Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
+            HashSet<Guid> handledSteps = [];
+            CheckStep(step, handledSteps);
         }
         PublishPayloadsIfNeeded();
+    }
+
+    private void CheckStep(Step step, HashSet<Guid> handledSteps)
+    {
+        if (handledSteps.Contains(step.Id))
+        {
+            return;
+        }
+
+        Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads = [];
+        foreach (var inputPort in step.InputPorts)
+        {
+            var payloads = from t in _automationProperties.Transitions
+                           where t.ToStepId == step.Id && t.ToStepPort == inputPort
+                           join s in _steps on t.FromStepId equals s.Id
+                           from p in s.Payloads
+                           where p.Port == t.FromStepPort
+                           select p;
+
+            inputPayloads.Add(inputPort, payloads.ToList());
+        }
+        var changedPorts = step.ProcessAsync(inputPayloads, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
+
+        if (changedPorts.Any())
+        {
+            return;
+        }
+
+        var nextSteps = from t in _automationProperties.Transitions
+                        where t.FromStepId == step.Id && changedPorts.Contains(t.FromStepPort!.Value)
+                        join s in _steps on t.ToStepId equals s.Id
+                        select s;
+
+        foreach(var nextStep in nextSteps.ToList())
+        {
+            CheckStep(nextStep, handledSteps);
+        }
     }
 
     private void PublishPayloadsIfNeeded()

@@ -91,18 +91,19 @@ public class StepVariableValue: Step
         }
     }
 
-    public override async Task ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         if (variableId != null)
         {
             var variableInfo = variableService.GetVariable(variableId.Value);
             var newPayload = variableInfo?.Value;
 
-            if (string.Compare(currentPayload, newPayload) != 0)
+            if (Payloads[0].UpdateData(newPayload))
             {
                 currentPayload = newPayload;
-                Payloads[0].Data = currentPayload;
+                return [Blazor.Diagrams.Core.Models.PortAlignment.Right];
             }
         }
+        return [];
     }
 }

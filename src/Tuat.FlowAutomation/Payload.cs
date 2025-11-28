@@ -1,4 +1,6 @@
-﻿namespace Tuat.FlowAutomation;
+﻿using JasperFx.CodeGeneration;
+
+namespace Tuat.FlowAutomation;
 
 public class Payload
 {
@@ -17,4 +19,13 @@ public class Payload
         }
     }
     public DateTime ChangedAt { get; private set; } = DateTime.UtcNow;
+    public bool UpdateData(object? value)
+    {
+        if (!object.Equals(Data, value))
+        {
+            Data = value;
+            return true;
+        }
+        return false;
+    }
 }
