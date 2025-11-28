@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
 using System.Linq;
 using Tuat.AutomationHelper;
@@ -30,6 +31,9 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
     protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         _steps.Clear();
+
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, _automationProperties.PreStartAction, InputValues, topAutomationId);
+
         foreach (var step in _automationProperties.Steps)
         {
             var convertedStep = Step.GetStep(step);
