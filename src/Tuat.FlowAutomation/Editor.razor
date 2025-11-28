@@ -19,7 +19,7 @@
 @inject DialogService DialogService
 @inject ContextMenuService ContextMenuService
 @inject IClipboardService ClipboardService
-@inject Tuat.Interfaces.IUIEventRegistration UIEventRegistration
+@inject UIFlowEventHandler UIFlowEventHandler
 @inject IJSRuntime JS
 @implements IAutomationEditor
 @implements IDisposable
@@ -91,9 +91,6 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		// UIEventRegistration.AutomationTriggered += OnAutomationTriggered;
-		// UIEventRegistration.AutomationHandlerChanged += OnAutomationHandlerChanged;
-		// UIEventRegistration.AutomationStateInfoChanged += OnAutomationStateInfoChanged;
 		_flowHandler = (FlowHandler)AutomationService.GetAutomation(Automation.Id);
 		_automationProperties = FlowHandler.GetAutomationProperties(Automation.Data);
 		_scriptEngine = FlowHandler.GetScriptEngine(Automation.ScriptType);
@@ -140,29 +137,70 @@
 		keyboardBehavior!.RemoveShortcut("g", ctrl: true, shift: false, alt: true);
 		keyboardBehavior.RemoveShortcut("Delete", ctrl: false, shift: false, alt: false);
 		keyboardBehavior.SetShortcut("Delete", ctrl: false, shift: false, alt: false, DeleteSelection);
-		// keyboardBehavior.SetShortcut("a", ctrl: true, shift: false, alt: false, SelectAll);
-		// keyboardBehavior.SetShortcut("z", ctrl: true, shift: false, alt: false, UndoAsync);
-		// keyboardBehavior.SetShortcut("y", ctrl: true, shift: false, alt: false, RedoAsync);
-		// _diagram.PointerDoubleClick += DiagramPointerDoubleClickAsync;
+		keyboardBehavior.SetShortcut("a", ctrl: true, shift: false, alt: false, SelectAll);
+		keyboardBehavior.SetShortcut("z", ctrl: true, shift: false, alt: false, UndoAsync);
+		keyboardBehavior.SetShortcut("y", ctrl: true, shift: false, alt: false, RedoAsync);
+		_diagram.PointerDoubleClick += DiagramPointerDoubleClickAsync;
 		_diagram.PointerUp += DiagramPointerUpAsync;
 		_diagram.PointerMove += DiagramPointerMove;
 		_diagram.PointerDown += DiagramPointerDown;
-
+		UIFlowEventHandler.PayloadsUpdated += PayloadsUpdated;
 		await ReloadDiagramAsync();
-		// RefreshInformations();
 
 		await base.OnInitializedAsync();
 	}
 
 	public void Dispose()
 	{
-		// UIEventRegistration.AutomationTriggered -= OnAutomationTriggered;
-		// UIEventRegistration.AutomationHandlerChanged -= OnAutomationHandlerChanged;
-		// UIEventRegistration.AutomationStateInfoChanged -= OnAutomationStateInfoChanged;
+		UIFlowEventHandler.PayloadsUpdated -= PayloadsUpdated;
 		_diagram.PointerUp -= DiagramPointerUpAsync;
 		_diagram.PointerMove -= DiagramPointerMove;
 		_diagram.PointerDown -= DiagramPointerDown;
-		// _diagram.PointerDoubleClick -= DiagramPointerDoubleClickAsync;
+		_diagram.PointerDoubleClick -= DiagramPointerDoubleClickAsync;
+	}
+
+	void PayloadsUpdated(object? sender, PayloadInfo payloadInfo)
+	{
+		if (payloadInfo.AutomationId != Automation.Id)
+		{
+			return;
+		}
+
+		foreach (var payload in payloadInfo.Payloads)
+		{
+			var step = _automationProperties.Steps.FirstOrDefault(x => x.Id == payload.StepId);
+			if (step == null)
+			{
+				continue;
+			}
+
+			var stepPayload = step.Payloads.FirstOrDefault(x => x.Port == payload.Port);
+			if (stepPayload == null)
+			{
+				step.Payloads.Add(new Payload()
+				{
+					Port = payload.Port,
+					Data = payload.Data
+				});
+			}
+			else
+			{
+				stepPayload.Data = payload.Data;
+			}
+
+			var node = _diagram.GetNode(step);
+			node?.Refresh();
+		}
+	}
+
+	async void DiagramPointerDoubleClickAsync(Model? model, Blazor.Diagrams.Core.Events.PointerEventArgs args)
+	{
+		if (args.Button != 0) return;
+
+		if (model is IStepNodeModel node)
+		{
+			await EditStepAsync((model as NodeModel)!);
+		}
 	}
 
 	void DiagramPointerDown(Model? model, Blazor.Diagrams.Core.Events.PointerEventArgs args)
@@ -253,7 +291,7 @@
 				var sourceStep = sourceNode.GetStep(_automationProperties);
 				var targetStep = targetNode.GetStep(_automationProperties);
 
-				if (!sourceStep!.OutputPorts.Contains(sourcePort) || !targetStep!.InputPorts.Contains(sourcePort))
+				if (!sourceStep!.OutputPorts.Contains(sourcePort) || !targetStep!.InputPorts.Contains(targetPort))
 				{
 					_diagram.Links.Remove(link);
 					continue;
@@ -333,16 +371,13 @@
 		{
 			_automationProperties = new();
 		}
-		foreach (var step in _automationProperties.Steps)
+		foreach (var step in _automationProperties.Steps.ToList())
 		{
 			//check if step in in handler (for live information)
-			var liveStep = _flowHandler.GetStep(step.Id);
 			var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!)!;
-			var node = AddStepToDiagram(liveStep ?? step, uiData.X, uiData.Y);
-			if (liveStep == null)
-			{
-				node.Initialize();
-			}
+			var node = AddStepToDiagram(step, uiData.X, uiData.Y);
+			_automationProperties.Steps.Remove(step);
+			_automationProperties.Steps.Add(node);
 		}
 		foreach (var transition in _automationProperties.Transitions)
 		{
@@ -357,6 +392,7 @@
 				AddLink(sourceStep, transition.FromStepPort.Value, targetStep, transition.ToStepPort.Value);
 			}
 		}
+		_flowHandler.RequestAllPayloads();
 
 		return Task.CompletedTask;
 	}
@@ -372,6 +408,7 @@
 
 	public Task<string> GetAutomationDataAsync()
 	{
+		AddUIDataToComponents();
 		return Task.FromResult(System.Text.Json.JsonSerializer.Serialize(_automationProperties));
 	}
 
@@ -398,48 +435,59 @@
 		onContextPointerPosition = _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
 		if (modelOnPointerUp is NodeModel node)
 		{
-			//        ContextMenuService.Open(args, ds =>
-			// @<RadzenMenu Click="OnNodeContextMenuItemClick">
-			//             <RadzenMenuItem Text="Edit" Value="1"></RadzenMenuItem>
-			//             <RadzenMenuItem Text="Copy" Value="3" Disabled="@(!Diagram.GetSelectedModels().Any())"></RadzenMenuItem>
-			//             <RadzenMenuItem Text="Delete" Value="2"></RadzenMenuItem>
-			//         </RadzenMenu>);            
+			       ContextMenuService.Open(args, ds =>
+					@<RadzenMenu Click="OnNodeContextMenuItemClick">
+			            <RadzenMenuItem Text="Edit" Value="1"></RadzenMenuItem>
+			            <RadzenMenuItem Text="Copy" Value="3" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
+			            <RadzenMenuItem Text="Delete" Value="2"></RadzenMenuItem>
+			        </RadzenMenu>);            
 		}
 		else if (modelOnPointerUp is LinkModel link)
 		{
 		}
 		else
 		{
-			ContextMenuService.Open(args, ds =>
-				@<RadzenMenu Click="OnContextMenuItemClick">
-					<RadzenMenuItem Text="Edit properties" Value="5"></RadzenMenuItem>
-					<RadzenMenuItem Text="Add step" Value="1"></RadzenMenuItem>
-				</RadzenMenu>
-	);
-			//                        ContextMenuService.Open(args, ds =>
-			//     @<RadzenMenu Click="OnContextMenuItemClick">
-			//     <RadzenMenuItem Text="Edit properties" Value="5"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Add step" Value="1"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Add information" Value="20"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Save" Value="2"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Copy" Value="8">
-			//         <RadzenMenuItem Text="Selection" Value="9" Disabled="@(!Diagram.GetSelectedModels().Any())"></RadzenMenuItem>
-			//         <RadzenMenuItem Text="All steps" Disabled="@(!AutomationProperties.Steps.Any() && !AutomationProperties.Steps.Any())" Value="10"></RadzenMenuItem>
-			//         <RadzenMenuItem Text="Complete flow" Value="11"></RadzenMenuItem>
-			//     </RadzenMenuItem>
-			//     <RadzenMenuItem Text="Paste" Value="12" Disabled="@(!ClipboardService.CanPaste(AutomationType.Flow))"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Undo" Value="14" Disabled="@(!CanUndo())"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Redo" Value="15" Disabled="@(!CanRedo())"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Select all" Value="13" Disabled="@(!AutomationProperties.Steps.Any())"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Restart" Value="3"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Reload" Value="4"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Script" Value="6"></RadzenMenuItem>
-			//     <RadzenMenuItem Text="Export" Value="7"></RadzenMenuItem>
-			// </RadzenMenu>
-			//    );            
+			   ContextMenuService.Open(args, ds =>
+			    @<RadzenMenu Click="OnContextMenuItemClick">
+			    <RadzenMenuItem Text="Edit properties" Value="5"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Add step" Value="1"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Save" Value="2"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Copy" Value="8">
+			        <RadzenMenuItem Text="Selection" Value="9" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
+			        <RadzenMenuItem Text="All steps" Disabled="@(!_automationProperties.Steps.Any() && !_automationProperties.Steps.Any())" Value="10"></RadzenMenuItem>
+			        <RadzenMenuItem Text="Complete flow" Value="11"></RadzenMenuItem>
+			    </RadzenMenuItem>
+			    <RadzenMenuItem Text="Paste" Value="12" Disabled="@(!ClipboardService.CanPaste("Flow"))"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Undo" Value="14" Disabled="@(!CanUndo())"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Redo" Value="15" Disabled="@(!CanRedo())"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Select all" Value="13" Disabled="@(!_automationProperties.Steps.Any())"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Restart" Value="3"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Reload" Value="4"></RadzenMenuItem>
+			    <RadzenMenuItem Text="Export" Value="7"></RadzenMenuItem>
+			</RadzenMenu>
+			   );            
 		}
 
 	}
+
+  async void OnNodeContextMenuItemClick(MenuItemEventArgs args)
+    {
+        ContextMenuService.Close();
+        var node = modelOnPointerUp as NodeModel;
+        switch (args.Value)
+        {
+            case 1:
+                await EditStepAsync(node!);
+                break;
+            case 2:
+                AddUndo();
+                RemoveNode(node!);
+                break;
+            case 3:
+                CopySelectionToClipboard();
+                break;
+        }
+    }
 
 	async void OnContextMenuItemClick(MenuItemEventArgs args)
 	{
@@ -452,29 +500,26 @@
 					await AddStepAsync((int)p.X, (int)p.Y);
 				}
 				break;
-				// case 2:
-				// 	await SaveAsync();
-				// 	break;
-				// case 3:
-				// 	Restart();
-				// 	break;
-				// case 4:
-				// 	AddUndo();
-				// 	await ReloadDiagramAsync();
-				// 	break;
+				case 2:
+					await SaveAsync();
+					break;
+				case 3:
+					Restart();
+					break;
+				case 4:
+					AddUndo();
+					await ReloadDiagramAsync();
+					break;
 				case 5:
 					SaveAutomationPropertiesToAutomation();
 					await OnEditSettings.InvokeAsync();
 					await InvokeAsync(StateHasChanged);
 				break;
-				// case 6:
-				// 	await ShowFlowAsync();
-				// 	break;
-				// case 7:
-				// 	await ExportAsync();
-				// 	break;
-				// case 8:
-				// 	return;
+				case 7:
+					await ExportAsync();
+					break;
+				case 8:
+					return;
 				// case 9:
 				// 	CopySelectionToClipboard();
 				// 	break;
@@ -487,24 +532,104 @@
 				// case 12:
 				// 	PasteFromClipboard(args);
 				// 	break;
-				// case 13:
-				// 	await SelectAll(Diagram);
-				// 	break;
-				// case 14:
-				// 	await UndoAsync(Diagram);
-				// 	break;
-				// case 15:
-				// 	await RedoAsync(Diagram);
-				// 	break;
-				// case 20:
-				// 	{
-				// 		AddUndo();
-				// 		var p = Diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
-				// 		await AddInformationAsync((int)p.X, (int)p.Y);
-				// 	}
-				// 	break;
+				case 13:
+					await SelectAll(_diagram);
+					break;
+				case 14:
+					await UndoAsync(_diagram);
+					break;
+				case 15:
+					await RedoAsync(_diagram);
+					break;
 		}
 		ContextMenuService.Close();
+	}
+
+    async Task SaveAsync()
+    {
+        await OnSave.InvokeAsync();
+    }
+
+    void Restart()
+    {
+        OnRestart.InvokeAsync();
+    }
+
+    Stream GetFileStream()
+    {
+        var fileStream = new MemoryStream();
+
+        AddUIDataToComponents();
+        System.Text.Json.JsonSerializer.Serialize(fileStream, Automation);
+        fileStream.Position = 0;
+
+        return fileStream;
+    }
+
+    async Task ExportAsync()
+    {
+        var fileStream = GetFileStream();
+        var fileName = "tuat_export_flow.json";
+
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    void CopySelectionToClipboard()
+    {
+        var content = new Dictionary<Type, object?>();
+        List<Step> steps = [];
+        List<Transition> transitions = [];
+        content.Add(typeof(List<Step>), steps);
+        content.Add(typeof(List<Transition>), transitions);
+
+        AddUIDataToComponents();
+        var selectedModels = _diagram.GetSelectedModels().ToList();
+        foreach (var sm in selectedModels)
+        {
+            if (sm is IStepNodeModel node)
+            {
+                var step = node.BaseStep!;
+                steps.Add(step);
+            }
+        }
+        foreach (var sm in selectedModels)
+        {
+            LinkModel? link = sm as LinkModel;
+            if (link != null && link.Target is Blazor.Diagrams.Core.Anchors.SinglePortAnchor)
+            {
+                var source = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Source).Port.Parent;
+                var target = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Target).Port.Parent;
+                var sourceStep = source.GetStep(steps);
+                var targetStep = target.GetStep(steps);
+                if (sourceStep != null && targetStep != null)
+                {
+                    var transition = _automationProperties.Transitions.First(x => x.FromStepId == sourceStep.Id && x.ToStepId == targetStep.Id);
+                    transitions.Add(transition);
+                }
+            }
+        }
+
+        ClipboardService.Copy("Flow", content);
+    }
+
+	async Task EditStepAsync(NodeModel node)
+	{
+		var step = node.GetStep(_automationProperties)!;
+		var result = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Edit Step", dialog =>
+		{
+			dialog.Step = step;
+		});
+		if (result != null)
+		{
+			AddUndo();
+			step.Name = result.Name;
+			step.Description = result.Description;
+			step.StepParameters = result.StepParameters;
+			SetNodeTitle(node, step);
+			node.Refresh();
+		}
 	}
 
 	async Task AddStepAsync(int x, int y)
@@ -528,8 +653,13 @@
 		var d1 = typeof(StepNodeModel<>);
 		Type[] typeArgs = { stepInfo.Type };
 		var makeme = d1.MakeGenericType(typeArgs);
+		if (step.GetType() != stepInfo.Type)
+		{
+			step = (Step)step.CopyObjectToOtherType(stepInfo.Type)!;
+		}
 		var stepNodeModel = (NodeModel)Activator.CreateInstance(makeme, step, Automation, new Blazor.Diagrams.Core.Geometry.Point(x, y))!;
-		stepNodeModel.Title = step.Title;
+		step.Initialize();
+		SetNodeTitle(stepNodeModel, step);
 		var node = _diagram.Nodes.Add(stepNodeModel)!;
 		foreach (var port in step.InputPorts)
 		{
@@ -542,10 +672,22 @@
 		return step;
 	}
 
+	void SetNodeTitle(NodeModel node, Step step)
+	{
+		if (!string.IsNullOrWhiteSpace(step.Name))
+		{
+			node.Title = step.Name;
+		}
+		else
+		{
+			var stepInfo = Generic.StepTypeDisplayNames.First(s => s.TypeName == step.StepTypeName);
+			node.Title =stepInfo.DisplayName;
+		}
+	}
+
 	Step AddNewStep(Step step, int x, int y)
 	{
 		step.Id = Guid.NewGuid();
-		step.Initialize();
 		_automationProperties.Steps.Add(step);
 		return AddStepToDiagram(step, x, y);
 	}
@@ -567,6 +709,7 @@
 
 	void SaveAutomationPropertiesToAutomation()
 	{
+		AddUIDataToComponents();
 		Automation.Data = System.Text.Json.JsonSerializer.Serialize(_automationProperties);
 	}
 
@@ -662,4 +805,17 @@
 
 	bool CanUndo() => _undoRedo.CanUndo();
 	bool CanRedo() => _undoRedo.CanRedo();
+
+	ValueTask SelectAll(Blazor.Diagrams.Core.Diagram diagram)
+	{
+		foreach (var node in diagram.Nodes)
+		{
+			diagram.SelectModel(node, false);
+		}
+		foreach (var link in diagram.Links)
+		{
+			diagram.SelectModel(link, false);
+		}
+		return ValueTask.CompletedTask;
+	}
 }

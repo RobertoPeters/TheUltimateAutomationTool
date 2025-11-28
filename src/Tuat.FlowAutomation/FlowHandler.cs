@@ -11,20 +11,23 @@ namespace Tuat.FlowAutomation;
 public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomationHandler
 {
     private List<Step> _steps = [];
-
-    public Step? GetStep(Guid id)
-    {
-        return _steps.FirstOrDefault(s => s.Id == id);
-    }
+    public bool _publishAllPayloads = false;
+    private DateTime _lastPublishTime = DateTime.MinValue;
 
     public FlowHandler(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
      : base(automation, clientService, dataService, variableService, messageBusService)
     {
     }
 
+    public void RequestAllPayloads()
+    {
+        _publishAllPayloads = true;
+        TriggerProcess();
+    }
+
     protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
-
+        PublishPayloadsIfNeeded();
     }
 
     protected override void RunProcess(IScriptEngine scriptEngine)
@@ -35,6 +38,33 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
             var convertedStep = Step.GetStep(step);
             _steps.Add(step);
         }
+        PublishPayloadsIfNeeded();
+    }
 
+    private void PublishPayloadsIfNeeded()
+    {
+        var publishAll = _publishAllPayloads;
+        _publishAllPayloads = false;
+        var now = DateTime.UtcNow;
+        if (_steps.Any())
+        {
+            var payloadInfo = new PayloadInfo();
+            payloadInfo.AutomationId = Automation.Id;
+            foreach (var step in _steps)
+            {
+                foreach(var payload in step.Payloads)
+                {
+                    if (publishAll || payload.ChangedAt > _lastPublishTime)
+                    {
+                        payloadInfo.Payloads.Add(payload);
+                    }
+                }
+            }
+            if (payloadInfo.Payloads.Any())
+            {
+                _messageBusService.PublishAsync(payloadInfo);
+            }
+        }
+        _lastPublishTime = now;
     }
 }

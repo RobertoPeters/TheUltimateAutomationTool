@@ -5,29 +5,31 @@
 @using Tuat.Models
 @inherits ResultDialogBase<Step>
 
-<RadzenTemplateForm @ref="Form" Data="@Model" TItem="Step">
-	<RadzenStack>
-		<RadzenFormField Text="Name" Variant="@Variant.Outlined">
-			<RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
-		</RadzenFormField>
-		<RadzenFormField Text="Type *" Variant="@Variant.Outlined">
-			<ChildContent>
-				<RadzenDropDown Data="Generic.StepTypeDisplayNames" Change="ChangeStepType" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.StepTypeName" Name="StepType" Disabled=@(!IsNew) />
-			</ChildContent>
-			<Helper>
-				<RadzenRequiredValidator Component="StepType" Text="This field is required" />
-			</Helper>
-		</RadzenFormField>
-		@if (!string.IsNullOrWhiteSpace(Model!.StepTypeName) && SettingsPropertiesParameters != null)
-		{
-			<DynamicComponent @ref="stepTypeProperties" Type="@(SettingsComponentType())" Parameters="SettingsPropertiesParameters" />
-		}
-	</RadzenStack>
-	<RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
-</RadzenTemplateForm>
+@if (Model != null)
+{
+	<RadzenTemplateForm @ref="Form" Data="@Model" TItem="Step">
+		<RadzenStack>
+			<RadzenFormField Text="Name" Variant="@Variant.Outlined">
+				<RadzenTextBox @bind-Value="@Model!.Name" Name="Name" spellcheck="false" />
+			</RadzenFormField>
+			<RadzenFormField Text="Type *" Variant="@Variant.Outlined">
+				<ChildContent>
+					<RadzenDropDown Data="Generic.StepTypeDisplayNames" Change="ChangeStepType" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.StepTypeName" Name="StepType" Disabled=@(!IsNew) />
+				</ChildContent>
+				<Helper>
+					<RadzenRequiredValidator Component="StepType" Text="This field is required" />
+				</Helper>
+			</RadzenFormField>
+			@if (!string.IsNullOrWhiteSpace(Model!.StepTypeName) && SettingsPropertiesParameters != null)
+			{
+				<DynamicComponent @ref="stepTypeProperties" Type="@(SettingsComponentType())" Parameters="SettingsPropertiesParameters" />
+			}
+			</RadzenStack>
+			<RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+		</RadzenTemplateForm>
+}
 
-
-	@code {
+@code {
 	protected override bool ShowClose => true;
 	protected override bool IsPersistent => false;
 	protected override bool CloseDialogOnOverlayClick => true;
@@ -51,8 +53,13 @@
 		{
 			IsNew = true;
 			Step = new Step();
+			Model = Step;
 		}
-		Model = Step.CopyObject();
+		else
+		{
+			var stepInfo = Generic.StepTypeDisplayNames.First(x => x.TypeName == Step.StepTypeName);
+			Model = (Step)Step.CopyObjectToOtherType(stepInfo.Type)!;
+		}
 		if (!IsNew)
 		{
 			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model } };
