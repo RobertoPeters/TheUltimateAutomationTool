@@ -44,7 +44,19 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
     {
         foreach (var step in _steps)
         {
-            step.ProcessAsync(Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
+            Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads = [];
+            foreach (var inputPort in step.InputPorts)
+            {
+                var payloads = from t in _automationProperties.Transitions
+                               where t.ToStepId == step.Id && t.ToStepPort == inputPort
+                               join s in _steps on t.FromStepId equals s.Id
+                               from p in s.Payloads
+                               where p.Port == t.FromStepPort
+                               select p;
+
+                inputPayloads.Add(inputPort, payloads.ToList());
+            }
+            step.ProcessAsync(inputPayloads, Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
         }
         PublishPayloadsIfNeeded();
     }

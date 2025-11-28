@@ -91,7 +91,7 @@ public class StepVariableValue: Step
         }
     }
 
-    public override async Task ProcessAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         if (variableId != null)
         {

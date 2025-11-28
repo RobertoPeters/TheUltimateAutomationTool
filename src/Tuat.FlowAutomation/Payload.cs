@@ -9,7 +9,7 @@ public class Payload
         get { return field; } 
         set
         {
-            if (field != value)
+            if (!object.Equals(field, value))
             {
                 field = value;
                 ChangedAt = DateTime.UtcNow;

@@ -98,7 +98,7 @@ public class Step
         return Task.CompletedTask;
     }
 
-    public virtual Task ProcessAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public virtual Task ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         return Task.CompletedTask;
     }
