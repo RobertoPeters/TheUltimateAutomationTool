@@ -19,7 +19,7 @@
 @inject DialogService DialogService
 @inject ContextMenuService ContextMenuService
 @inject IClipboardService ClipboardService
-@inject UIFlowEventHandler UIFlowEventHandler
+@inject UIFlowEventHandlerRegistration UIFlowEventHandlerRegistration
 @inject IJSRuntime JS
 @implements IAutomationEditor
 @implements IDisposable
@@ -33,8 +33,8 @@
 		</div>
 
 		<div style="position: absolute; top: 10px; right: 10px; z-index: 10;" @oncontextmenu:preventDefault="false">
-@* 			<RadzenUpload Icon="upload" ChooseText="Import" Auto=true Multiple=false Accept="text/json" Change=@(args => OnImport(args)) InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Import" } })" />
- *@			<RadzenButton Size="ButtonSize.Small" Text="+" Click="@(() => _diagram.SetZoom(_diagram.Zoom * 1.25))" />
+			<RadzenUpload Icon="upload" ChooseText="Import" Auto=true Multiple=false Accept="text/json" Change=@(args => OnImport(args)) InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Import" } })" />
+			<RadzenButton Size="ButtonSize.Small" Text="+" Click="@(() => _diagram.SetZoom(_diagram.Zoom * 1.25))" />
 			<RadzenButton Size="ButtonSize.Small" Text="-" Click="@(() => _diagram.SetZoom(_diagram.Zoom * 0.75))" />
 			<RadzenButton Size="ButtonSize.Small" Text="Reset" Click="@(() => _diagram.SetZoom(1.0))" />
 			<RadzenButton Size="ButtonSize.Small" Text="Fit" Click="@(() => _diagram.ZoomToFit())" />
@@ -144,7 +144,7 @@
 		_diagram.PointerUp += DiagramPointerUpAsync;
 		_diagram.PointerMove += DiagramPointerMove;
 		_diagram.PointerDown += DiagramPointerDown;
-		UIFlowEventHandler.PayloadsUpdated += PayloadsUpdated;
+		UIFlowEventHandlerRegistration.PayloadsUpdated += PayloadsUpdated;
 		await ReloadDiagramAsync();
 
 		await base.OnInitializedAsync();
@@ -152,7 +152,7 @@
 
 	public void Dispose()
 	{
-		UIFlowEventHandler.PayloadsUpdated -= PayloadsUpdated;
+		UIFlowEventHandlerRegistration.PayloadsUpdated -= PayloadsUpdated;
 		_diagram.PointerUp -= DiagramPointerUpAsync;
 		_diagram.PointerMove -= DiagramPointerMove;
 		_diagram.PointerDown -= DiagramPointerDown;
@@ -496,7 +496,7 @@
 			case 1:
 				{
 					AddUndo();
-					var p = _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
+                    var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
 					await AddStepAsync((int)p.X, (int)p.Y);
 				}
 				break;
@@ -520,18 +520,21 @@
 					break;
 				case 8:
 					return;
-				// case 9:
-				// 	CopySelectionToClipboard();
-				// 	break;
-				// case 10:
-				// 	CopyAllStepsToClipboard();
-				// 	break;
-				// case 11:
-				// 	CopyFlowToClipboard();
-				// 	break;
-				// case 12:
-				// 	PasteFromClipboard(args);
-				// 	break;
+				case 9:
+					CopySelectionToClipboard();
+					break;
+				case 10:
+					CopyAllStepsToClipboard();
+					break;
+				case 11:
+					CopyFlowToClipboard();
+					break;
+				case 12:
+					{
+	                    var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
+ 						PasteFromClipboard((int)p.X, (int)p.Y);
+					}
+					break;
 				case 13:
 					await SelectAll(_diagram);
 					break;
@@ -542,8 +545,115 @@
 					await RedoAsync(_diagram);
 					break;
 		}
+		onContextPointerPosition = null;
 		ContextMenuService.Close();
 	}
+
+    void PasteFromClipboard(int x, int y)
+    {
+        var content = ClipboardService.Paste();
+        content.TryGetValue(typeof(Automation), out object? automationObject);
+        content.TryGetValue(typeof(List<Step>), out object? stepsObject);
+        content.TryGetValue(typeof(List<Transition>), out object? transitionsObject);
+
+        List<Transition> transitions = transitionsObject == null ? [] : (List<Transition>)transitionsObject!;
+        List<Step> steps = stepsObject == null ? [] : (List<Step>)stepsObject!;
+        Automation? automation = automationObject == null ? null : (Automation)automationObject!;
+
+        if (!transitions.Any() && !steps.Any())
+        {
+            return;
+        }
+
+        AddUndo();
+
+        if (automation != null)
+        {
+            Automation.IsSubAutomation = automation.IsSubAutomation;
+            Automation.Enabled = automation.Enabled;
+            AutomationProperties properties = new();
+            if (!string.IsNullOrWhiteSpace(automation.Data))
+            {
+                properties = System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(automation.Data) ?? new();
+            }
+            _automationProperties.PreStartAction = properties.PreStartAction;
+            transitions = properties.Transitions.ToList();
+            steps = properties.Steps.ToList();
+        }
+
+        int? minX = null;
+        int? minY = null;
+
+        foreach (var step in steps.Where(x => !string.IsNullOrWhiteSpace(x.UIData)).ToList())
+        {
+            var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
+            if (uiData != null && (minX == null || uiData.X < minX))
+            {
+                minX = uiData.X;
+            }
+            if (uiData != null && (minY == null || uiData.Y < minY))
+            {
+                minY = uiData.Y;
+            }
+        }
+        minX ??= 0;
+        minY ??= 0;
+
+        Dictionary<Guid, Guid> oldStepIdToNewId = [];
+        var p = _diagram.GetRelativeMousePoint(x, y);
+        foreach (var step in steps.ToList())
+        {
+            var oldId = step.Id;
+			step.Id = Guid.NewGuid();
+			oldStepIdToNewId.Add(oldId, step.Id);
+            var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
+            var newStep = AddStepToDiagram(step, (int)p.X + (uiData?.X ?? 0) - (minX ?? 0), (int)p.Y + (uiData?.Y ?? 0) - (minY ?? 0));
+			_automationProperties.Steps.Add(newStep);
+            _diagram.SelectModel(_diagram.GetNode(newStep)!, false);
+        }
+
+        foreach (var transition in transitions)
+        {
+            if (transition.FromStepId == null || transition.ToStepId == null) continue;
+
+            LinkUIData? uiData = null;
+            if (!string.IsNullOrWhiteSpace(transition.UIData))
+            {
+                uiData = System.Text.Json.JsonSerializer.Deserialize<LinkUIData>(transition.UIData!);
+            }
+            transition.FromStepId = oldStepIdToNewId[transition.FromStepId.Value];
+            transition.ToStepId = oldStepIdToNewId[transition.ToStepId.Value];
+            transition.Id = Guid.NewGuid();
+            _automationProperties.Transitions.Add(transition);
+
+			var targetStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.ToStepId);
+			var sourceStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.FromStepId);
+			AddLink(sourceStep!, transition.FromStepPort!.Value, targetStep!, transition.ToStepPort!.Value);
+        }
+
+        _diagram.Refresh();
+    }
+
+    void CopyFlowToClipboard()
+    {
+        var content = new Dictionary<Type, object?>();
+
+        AddUIDataToComponents();
+        content.Add(typeof(Automation), Automation);
+
+        ClipboardService.Copy("Flow", content);
+    }
+
+    void CopyAllStepsToClipboard()
+    {
+        var content = new Dictionary<Type, object?>();
+
+        AddUIDataToComponents();
+        content.Add(typeof(List<Step>), _automationProperties.Steps);
+        content.Add(typeof(List<Transition>), _automationProperties.Transitions);
+
+        ClipboardService.Copy("Flow", content);
+    }
 
     async Task SaveAsync()
     {

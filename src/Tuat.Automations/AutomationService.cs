@@ -22,7 +22,7 @@ public class AutomationService(IDataService _dataService, IClientService _client
             {
                 try
                 {
-                    item.Value.TriggerProcess();
+                    item.Value.RequestTriggerProcess();
                 }
                 catch
                 {

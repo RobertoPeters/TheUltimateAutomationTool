@@ -1,4 +1,6 @@
 ﻿using System.Text.Json.Serialization;
+using Tuat.Interfaces;
+using Tuat.Models;
 
 namespace Tuat.FlowAutomation;
 
@@ -91,5 +93,13 @@ public class Step
         return [];
     }
 
+    public virtual Task SetupAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    {
+        return Task.CompletedTask;
+    }
 
+    public virtual Task ProcessAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    {
+        return Task.CompletedTask;
+    }
 }

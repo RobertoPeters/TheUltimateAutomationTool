@@ -22,21 +22,29 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
     public void RequestAllPayloads()
     {
         _publishAllPayloads = true;
-        TriggerProcess();
+        RequestTriggerProcess();
     }
 
     protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
-    {
-        PublishPayloadsIfNeeded();
-    }
-
-    protected override void RunProcess(IScriptEngine scriptEngine)
     {
         _steps.Clear();
         foreach (var step in _automationProperties.Steps)
         {
             var convertedStep = Step.GetStep(step);
-            _steps.Add(step);
+            _steps.Add(convertedStep);
+        }
+        foreach(var step in _steps)
+        {
+            step.SetupAsync(Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
+        }
+        PublishPayloadsIfNeeded();
+    }
+
+    protected override void RunProcess(IScriptEngine scriptEngine)
+    {
+        foreach (var step in _steps)
+        {
+            step.ProcessAsync(Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
         }
         PublishPayloadsIfNeeded();
     }
@@ -63,6 +71,7 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
             if (payloadInfo.Payloads.Any())
             {
                 _messageBusService.PublishAsync(payloadInfo);
+                RequestTriggerProcess();
             }
         }
         _lastPublishTime = now;

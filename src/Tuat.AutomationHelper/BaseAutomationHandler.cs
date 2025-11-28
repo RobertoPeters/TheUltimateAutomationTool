@@ -361,7 +361,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
 
     private long _triggering = 0;
     private readonly object _triggerLock = new object();
-    private void RequestTriggerProcess()
+    public void RequestTriggerProcess()
     {
         var count = Interlocked.Read(ref _triggering);
         if (count < 3)

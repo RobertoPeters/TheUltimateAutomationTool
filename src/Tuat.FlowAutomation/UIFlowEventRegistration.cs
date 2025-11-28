@@ -1,6 +1,9 @@
-﻿namespace Tuat.FlowAutomation;
+﻿using Wolverine.Attributes;
+[assembly: WolverineModule]
 
-public class UIFlowEventHandler
+namespace Tuat.FlowAutomation;
+
+public class UIFlowEventHandlerRegistration
 {
     public event EventHandler<PayloadInfo>? PayloadsUpdated;
 
@@ -10,9 +13,9 @@ public class UIFlowEventHandler
     }
 }
 
-public static class UIFlowEventRegistration
+public static class UIFlowEventRegistrationMessageHandler
 {
-    public static void Handle(PayloadInfo payloadInfo, UIFlowEventHandler uiEventRegistration)
+    public static void Handle(PayloadInfo payloadInfo, UIFlowEventHandlerRegistration uiEventRegistration)
     {
         uiEventRegistration.Handle(payloadInfo);
     }

@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using Tuat.Interfaces;
+using Tuat.Models;
 
 namespace Tuat.FlowAutomation.StepTypes.VariableValue;
 
@@ -67,4 +69,40 @@ public class StepVariableValue: Step
         set => this[MockingValuesKey] = value;
     }
 
+    private int? variableId = null;
+    private string? currentPayload = null;
+
+    public override async Task SetupAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    {
+        var clientId = dataService.GetClients().Where(x => string.Compare(x.Name, ClientName, true) == 0).FirstOrDefault();
+        if (VariableName != null && clientId != null)
+        {
+            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, automation.Id, IsPersistant, Data, null);
+            if (variableId != null)
+            {
+                var variableInfo = variableService.GetVariable(variableId.Value);
+                currentPayload = variableInfo?.Value;
+
+                if (PayloadOnStart)
+                {
+                    Payloads[0].Data = currentPayload;
+                }
+            }
+        }
+    }
+
+    public override async Task ProcessAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    {
+        if (variableId != null)
+        {
+            var variableInfo = variableService.GetVariable(variableId.Value);
+            var newPayload = variableInfo?.Value;
+
+            if (string.Compare(currentPayload, newPayload) != 0)
+            {
+                currentPayload = newPayload;
+                Payloads[0].Data = currentPayload;
+            }
+        }
+    }
 }

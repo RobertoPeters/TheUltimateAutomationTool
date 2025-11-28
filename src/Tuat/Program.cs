@@ -31,7 +31,7 @@ builder.Services.AddSingleton<Tuat.Interfaces.IClientService, Tuat.Clients.Clien
 builder.Services.AddSingleton<Tuat.Interfaces.IAutomationService, Tuat.Automations.AutomationService>();
 builder.Services.AddSingleton<Tuat.Interfaces.IUIEventRegistration, Tuat.Components.UIEventRegistration>();
 builder.Services.AddSingleton<Tuat.Interfaces.IClipboardService, Tuat.ClipboardService>();
-builder.Services.AddScoped<Tuat.FlowAutomation.UIFlowEventHandler>();
+builder.Services.AddSingleton<Tuat.FlowAutomation.UIFlowEventHandlerRegistration>();
 builder.Services.AddScoped<ContextMenuService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<DialogService>();
