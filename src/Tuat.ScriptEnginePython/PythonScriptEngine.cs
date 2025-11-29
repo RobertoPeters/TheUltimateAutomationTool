@@ -12,6 +12,9 @@ namespace Tuat.ScriptEnginePython;
 [Editor("Tuat.ScriptEnginePython.Editor", typeof(Editor))]
 public class PythonScriptEngine : IScriptEngine
 {
+    private static bool PythonInitialzed = false;
+    private static string PythonNotSupportedMessage = "Python environment could not be initialized. Make sure Python is installed on the system.";
+
     private PyModule? _engine;
     private IClientService? _clientService;
     private IDataService? _dataService;
@@ -22,14 +25,16 @@ public class PythonScriptEngine : IScriptEngine
 
     static PythonScriptEngine()
     {
-        if (!InitializeForLinux())
+        PythonInitialzed = InitializeForLinux();
+        if (!PythonInitialzed)
         {
-            InitializeForWindows();
+            PythonInitialzed = InitializeForWindows();
         }
     }
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? inputValues = null, int? topAutomationId = null)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         _clientService = clientService;
         _dataService = dataService;
         _variableService = variableService;
@@ -61,6 +66,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public void HandleSubAutomationOutputVariables(List<AutomationOutputVariable> outputVariables)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
             foreach (var variable in outputVariables)
@@ -72,6 +78,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public List<IScriptEngine.ScriptVariable> GetScriptVariables() 
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         List<IScriptEngine.ScriptVariable> result = [];
         using (Py.GIL())
         {
@@ -104,6 +111,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
             if (functionParameters?.Any() != true)
@@ -119,6 +127,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
             T result = default;
@@ -142,6 +151,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public void Execute(string script)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
             _engine!.Exec(script);
@@ -150,6 +160,7 @@ public class PythonScriptEngine : IScriptEngine
 
     public object? Evaluate(string script)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
             try
@@ -167,20 +178,31 @@ public class PythonScriptEngine : IScriptEngine
 
     public void Dispose()
     {
-        using (Py.GIL())
+        if (PythonInitialzed)
         {
-            foreach (var pyObj in _pythonFunc.Values)
+            try
             {
-                pyObj.Dispose();
+                using (Py.GIL())
+                {
+                    foreach (var pyObj in _pythonFunc.Values)
+                    {
+                        pyObj.Dispose();
+                    }
+                    _engine?.Dispose();
+                }
+                _pythonFunc.Clear();
+                _engine = null;
             }
-            _engine?.Dispose();
+            catch
+            {
+                //ignore
+            }
         }
-        _pythonFunc.Clear();
-        _engine = null;
     }
 
     public string GetDeclareFunction(string functionName, IScriptEngine.FunctionReturnValue? returnValue = null, List<IScriptEngine.FunctionParameter>? functionParameters = null, string? body = null)
     {
+        if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
 
         var result = new StringBuilder();
@@ -286,20 +308,29 @@ public class PythonScriptEngine : IScriptEngine
         return script.ToString();
     }
 
-    private static bool InitializeForLinux()
+    private static bool InitializeForWindows()
     {
         const string pythonLibName = "python3";
         var searchPaths = System.Environment
                 .GetEnvironmentVariable("PATH")?
                 .Split(";", StringSplitOptions.RemoveEmptyEntries)
-                .Where(x => x.Contains("Python3", StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.Contains("Python", StringComparison.OrdinalIgnoreCase))
                 .ToList() ?? [];
+        searchPaths = searchPaths.Select(x =>
+        {
+            if (x.EndsWith(@"Python\Launcher\"))
+            {
+                return x.Replace(@"Python\Launcher\", @"Python\");
+            }
+            else
+            {
+                return x;
+            }
+        }).ToList();
         string libPythonPath = "";
         foreach (var path in searchPaths.Where(x => Directory.Exists(x)))
         {
-            var foundLib = Directory.GetFiles(path, $"{pythonLibName}*.dll")
-                                        .OrderByDescending(f => f) // Get latest version
-                                        .FirstOrDefault();
+            var foundLib = SearchFolder(path);
 
             if (foundLib != null)
             {
@@ -315,17 +346,48 @@ public class PythonScriptEngine : IScriptEngine
 
         Console.WriteLine($"Initializing Python.NET with library: {libPythonPath}");
         Runtime.PythonDLL = libPythonPath;
-        PythonEngine.Initialize();
-        PythonEngine.BeginAllowThreads();
-        using (Py.GIL())
+        try
         {
-            dynamic sys = Py.Import("sys");
-            Console.WriteLine($"Python Version: {sys.version}");
+            PythonEngine.Initialize();
+            PythonEngine.BeginAllowThreads();
+            using (Py.GIL())
+            {
+                dynamic sys = Py.Import("sys");
+                Console.WriteLine($"Python Version: {sys.version}");
+            }
+        }
+        catch
+        {
+            return false;
         }
         return true;
+
+        string? SearchFolder(string folder)
+        {
+            var foundLib = Directory.GetFiles(folder, $"{pythonLibName}*.dll")
+                             .OrderByDescending(f => f) // Get latest version
+                             .FirstOrDefault();
+
+            if (foundLib != null)
+            {
+                return foundLib;
+            }
+
+            var subFolders = Directory.GetDirectories(folder);
+            foreach (var subFolder in subFolders)
+            {
+                foundLib = SearchFolder(subFolder);
+                if (foundLib != null)
+                {
+                    return foundLib;
+                }
+            }
+
+            return null;
+        }
     }
 
-    private static bool InitializeForWindows()
+    private static bool InitializeForLinux()
     {
         const string pythonLibName = "libpython3";
         var searchPaths = new[] { "/usr/lib/x86_64-linux-gnu", "/usr/lib", "/usr/local/lib" };
@@ -350,12 +412,19 @@ public class PythonScriptEngine : IScriptEngine
 
         Console.WriteLine($"Initializing Python.NET with library: {libPythonPath}");
         Runtime.PythonDLL = libPythonPath;
-        PythonEngine.Initialize();
-        PythonEngine.BeginAllowThreads();
-        using (Py.GIL())
+        try
         {
-            dynamic sys = Py.Import("sys");
-            Console.WriteLine($"Python Version: {sys.version}");
+            PythonEngine.Initialize();
+            PythonEngine.BeginAllowThreads();
+            using (Py.GIL())
+            {
+                dynamic sys = Py.Import("sys");
+                Console.WriteLine($"Python Version: {sys.version}");
+            }
+        }
+        catch
+        {
+            return false;
         }
         return true;
     }

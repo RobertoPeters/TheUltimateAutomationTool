@@ -90,6 +90,11 @@ public class CSharpEngine : IScriptEngine
             var func = (Func<T>)scriptMethod;
             return func();
         }
+        else if (methodProtoType.functionParameters.Count == 1 && methodProtoType.functionParameters[0].Type == typeof(List<object?>))
+        {
+            var func = (Func< List<object?>?, T >)scriptMethod;
+            return func((List<object?>?)functionParameters![0].Value);
+        }
         return default;
     }
 
@@ -113,8 +118,8 @@ public class CSharpEngine : IScriptEngine
         scriptMethodProtoTypes.Add(functionName, (returnValue, functionParameters));
 
         var result = new StringBuilder();
-        var returnTypeText = returnValue == null ? "void" : $"{returnValue.Type.FullName}{(returnValue.Nullable ? "?" : "")}";
-        var funcPar = functionParameters?.Select(p => $"{p.Type.FullName}{(p.Nullable ? "?" : "")} {p.Name}").ToList() ?? [];
+        var returnTypeText = returnValue == null ? "void" : $"{GetTypeFullName(returnValue.Type)}{(returnValue.Nullable ? "?" : "")}";
+        var funcPar = functionParameters?.Select(p => $"{GetTypeFullName(p.Type)}{(p.Nullable ? "?" : "")} {p.Name}").ToList() ?? [];
         result.Append($"{returnTypeText} {functionName}(");
         result.Append(string.Join(", ", funcPar));
         result.AppendLine(")");
@@ -125,6 +130,18 @@ public class CSharpEngine : IScriptEngine
         }
         result.AppendLine("}");
         return result.ToString();
+    }
+
+    private string GetTypeFullName(Type type)
+    {
+        if (type.IsGenericType)
+        {
+            var genericTypeName = type.GetGenericTypeDefinition().FullName;
+            var genericArguments = type.GetGenericArguments();
+            var genericArgsNames = string.Join(", ", genericArguments.Select(t => GetTypeFullName(t)));
+            return $"{genericTypeName.Substring(0, genericTypeName.IndexOf('`'))}<{genericArgsNames}>";
+        }
+        return type.FullName!;
     }
 
     private string GetUserMethodsMapping()
@@ -140,19 +157,19 @@ public class CSharpEngine : IScriptEngine
                 }
                 else
                 {
-                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{methodProtoType.Value.returnValue.Type.FullName}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{GetTypeFullName(methodProtoType.Value.returnValue.Type)}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
                 }
             }
             else
             {
-                var funcPar = methodProtoType.Value.functionParameters.Select(p => $"{p.Type.FullName}{(p.Nullable ? "?" : "")}").ToList();
+                var funcPar = string.Join(", ", methodProtoType.Value.functionParameters.Select(p => $"{GetTypeFullName(p.Type)}{(p.Nullable ? "?" : "")}").ToList());
                 if (methodProtoType.Value.returnValue == null)
                 {
                     script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Action({funcPar})){methodProtoType.Key};""");
                 }
                 else
                 {
-                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{funcPar}, {methodProtoType.Value.returnValue.Type.FullName}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
+                    script.AppendLine($"""Methods["{methodProtoType.Key}"] = (Func<{funcPar}, {GetTypeFullName(methodProtoType.Value.returnValue.Type)}{(methodProtoType.Value.returnValue.Nullable ? "?" : "")}>){methodProtoType.Key};""");
                 }
             }
         }

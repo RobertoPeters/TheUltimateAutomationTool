@@ -44,8 +44,9 @@ public class StepScript : Step
     {
         if (!string.IsNullOrWhiteSpace(Script))
         {
-            var inputPayloadsList = inputPayloads.SelectMany(x => x.Value).ToList();
+            var inputPayloadsList = inputPayloads.SelectMany(x => x.Value.Select(y => y.Data)).ToList();
             var outputPayload = scriptEngine.CallFunction<object?>(StepMethodName, [new IScriptEngine.FunctionParameter() { Name = "inputPayloads", Nullable= true, Type = typeof(List<object?>), Value = inputPayloadsList }]);
+            Payloads[0].Data = outputPayload;
         }
 
         return Task.FromResult<List<Blazor.Diagrams.Core.Models.PortAlignment>>([]);

@@ -79,25 +79,12 @@ public class JavaScriptEngine : IScriptEngine
 
     public void CallVoidFunction(string functionName, List<IScriptEngine.FunctionParameter>? functionParameters = null)
     {
-        var result = new StringBuilder();
-        result.Append($"{functionName}(");
-        if (functionParameters?.Any() == true)
-        {
-            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
-        }
-        result.AppendLine(")");
-        _engine?.Execute(result.ToString());
+        var func = _engine!.GetValue(functionName);
+        _engine.Invoke(func, functionParameters?.Select(p => JsValue.FromObject(_engine, p.Value)).ToArray() ?? []);
     }
 
     public T CallFunction<T>(string functionName, List<FunctionParameter>? functionParameters = null)
     {
-        var result = new StringBuilder();
-        result.Append($"{functionName}(");
-        if (functionParameters?.Any() == true)
-        {
-            result.Append(string.Join(", ", functionParameters.Select(p => p.Value)));
-        }
-        result.AppendLine(")");
         var func = _engine!.GetValue(functionName);
         var jsResult = _engine.Invoke(func, functionParameters?.Select(p => JsValue.FromObject(_engine, p.Value)).ToArray() ?? []);
         return (T?)jsResult.ToObject();
