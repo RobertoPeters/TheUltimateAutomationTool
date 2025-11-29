@@ -209,7 +209,7 @@ public class PythonScriptEngine : IScriptEngine
         result.Append($"def {functionName}(");
         if (functionParameters?.Any() == true)
         {
-            string.Join(", ", functionParameters.Select(p => p.Name));
+            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
         }
         result.AppendLine("):");
         if (!string.IsNullOrWhiteSpace(body))
