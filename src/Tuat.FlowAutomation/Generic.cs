@@ -66,7 +66,7 @@ public static class Generic
                                 DisplayName = attribute != null ? attribute.DisplayName : type.Name,
                             });
                         }
-                        _clientTypeDisplayNames = items;
+                        _clientTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
 
                     }
                 }
@@ -113,7 +113,7 @@ public static class Generic
                                 SettingsEditorComponentType = settingsEditorControl,
                             });
                         }
-                        _stepTypeDisplayNames = items;
+                        _stepTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
 
                     }
                 }

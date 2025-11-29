@@ -71,7 +71,7 @@ public static class Generic
                                 SettingsEditorComponentType = ComponentType(editorControl?.EditorTypeName)
                             });
                         }
-                        _clientTypeDisplayNames = items;
+                        _clientTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
 
                     }
                 }
@@ -124,7 +124,7 @@ public static class Generic
                                 EditorComponentType = editorControl
                             });
                         }
-                        _automationTypeDisplayNames = items;
+                        _automationTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
 
                     }
                 }
@@ -168,7 +168,7 @@ public static class Generic
                                 EditorComponentType = ComponentType(editorControl?.EditorTypeName)
                             });
                         }
-                        _scriptTypeDisplayNames = items;
+                        _scriptTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
 
                     }
                 }
