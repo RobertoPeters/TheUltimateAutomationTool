@@ -95,10 +95,12 @@ public class JavaScriptEngine : IScriptEngine
         result.Append($"{functionName}(");
         if (functionParameters?.Any() == true)
         {
-            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
+            result.Append(string.Join(", ", functionParameters.Select(p => p.Value)));
         }
         result.AppendLine(")");
-        return (T?)Evaluate(result.ToString());
+        var func = _engine!.GetValue(functionName);
+        var jsResult = _engine.Invoke(func, functionParameters?.Select(p => JsValue.FromObject(_engine, p.Value)).ToArray() ?? []);
+        return (T?)jsResult.ToObject();
     }
 
     public void Execute(string script)
@@ -123,7 +125,7 @@ public class JavaScriptEngine : IScriptEngine
         result.Append($"function {functionName}(");
         if (functionParameters?.Any() == true)
         {
-            string.Join(", ", functionParameters.Select(p => p.Name));
+            result.Append(string.Join(", ", functionParameters.Select(p => p.Name)));
         }
         result.AppendLine("){");
         if (body != null)

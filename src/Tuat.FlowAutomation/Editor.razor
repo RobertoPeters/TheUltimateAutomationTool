@@ -730,6 +730,8 @@
 		var result = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Edit Step", dialog =>
 		{
 			dialog.Step = step;
+			dialog.ScriptEditorType = ScriptEditorType;
+			dialog.ScriptEngine = _scriptEngine;
 		});
 		if (result != null)
 		{
@@ -748,6 +750,8 @@
 		var step = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Add Step", dialog =>
 		{
 			dialog.Step = null;
+			dialog.ScriptEditorType = ScriptEditorType;
+			dialog.ScriptEngine = _scriptEngine;
 		});
 		if (step != null)
 		{

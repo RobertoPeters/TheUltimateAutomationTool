@@ -41,6 +41,12 @@
 	[Parameter]
 	public Automation? Automation { get; set; }
 
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
 	bool IsNew;
 	Step? Model;
 	RadzenTemplateForm<Step>? Form;
@@ -62,7 +68,7 @@
 		}
 		if (!IsNew)
 		{
-			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model } };
+			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, {"ScriptEngine", ScriptEngine } };
 		}
 		base.OnInitialized();
 	}
@@ -78,15 +84,19 @@
 		if (!string.IsNullOrWhiteSpace(Model?.StepTypeName))
 		{
 			Model = (Step)Model.CopyObjectToOtherType(Generic.StepTypeDisplayNames.First(x => x.TypeName == Model.StepTypeName).Type)!;
-			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model } };
+			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, { "ScriptEngine", ScriptEngine } };
 		}
 	}
 
-	void OnSubmit()
+	async Task OnSubmit()
 	{
 		Form!.EditContext.Validate();
 		if (Form.IsValid)
 		{
+			if (stepTypeProperties?.Instance is IStepSettings stepSettings)
+			{
+				await stepSettings.SaveChangesAsync();
+			}
 			Close(Model);
 		}
 	}

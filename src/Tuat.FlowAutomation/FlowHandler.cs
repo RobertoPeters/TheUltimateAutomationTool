@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.Scripting;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
 using Tuat.AutomationHelper;
 using Tuat.Interfaces;
 using Tuat.Models;
@@ -32,17 +33,26 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
     {
         _steps.Clear();
 
-        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, _automationProperties.PreStartAction, InputValues, topAutomationId);
+        var additionalScript = new StringBuilder();
+
+        additionalScript.AppendLine(_automationProperties.PreStartAction);
 
         foreach (var step in _automationProperties.Steps)
         {
             var convertedStep = Step.GetStep(step);
             _steps.Add(convertedStep);
         }
-        foreach(var step in _steps)
+        foreach (var step in _steps)
         {
-            step.SetupAsync(Automation, _clientService, _dataService, _variableService, _messageBusService).Wait();
+            var additionalScriptForStep = step.SetupAsync(scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
+            if (!string.IsNullOrWhiteSpace(additionalScriptForStep))
+            {
+                additionalScript.AppendLine(additionalScriptForStep);
+            }
         }
+
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, additionalScript.ToString(), InputValues, topAutomationId);
+
         PublishPayloadsIfNeeded();
     }
 
@@ -51,12 +61,12 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
         foreach (var step in _steps)
         {
             HashSet<Guid> handledSteps = [];
-            CheckStep(step, handledSteps);
+            CheckStep(scriptEngine, step, handledSteps);
         }
         PublishPayloadsIfNeeded();
     }
 
-    private void CheckStep(Step step, HashSet<Guid> handledSteps)
+    private void CheckStep(IScriptEngine scriptEngine, Step step, HashSet<Guid> handledSteps)
     {
         if (handledSteps.Contains(step.Id))
         {
@@ -75,7 +85,7 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
 
             inputPayloads.Add(inputPort, payloads.ToList());
         }
-        var changedPorts = step.ProcessAsync(inputPayloads, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
+        var changedPorts = step.ProcessAsync(inputPayloads, scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
 
         if (changedPorts.Any())
         {
@@ -89,7 +99,7 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
 
         foreach(var nextStep in nextSteps.ToList())
         {
-            CheckStep(nextStep, handledSteps);
+            CheckStep(scriptEngine, nextStep, handledSteps);
         }
     }
 

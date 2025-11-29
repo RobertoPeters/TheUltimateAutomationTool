@@ -72,12 +72,17 @@ public class StepVariableValue: Step
     private int? variableId = null;
     private string? currentPayload = null;
 
-    public override async Task SetupAsync(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         var clientId = dataService.GetClients().Where(x => string.Compare(x.Name, ClientName, true) == 0).FirstOrDefault();
         if (VariableName != null && clientId != null)
         {
-            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, automation.Id, IsPersistant, Data, null);
+            List<string>? mochingValues = null;
+            if (!string.IsNullOrWhiteSpace(MockingValues))
+            {
+                mochingValues = System.Text.Json.JsonSerializer.Deserialize<List<string>>(MockingValues);
+            }
+            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, automation.Id, IsPersistant, Data, mochingValues);
             if (variableId != null)
             {
                 var variableInfo = variableService.GetVariable(variableId.Value);
@@ -89,9 +94,10 @@ public class StepVariableValue: Step
                 }
             }
         }
+        return null;
     }
 
-    public override async Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         if (variableId != null)
         {

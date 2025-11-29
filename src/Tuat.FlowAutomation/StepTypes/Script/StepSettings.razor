@@ -1,0 +1,48 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IStepSettings
+@inject Tuat.Interfaces.IDataService DataService
+
+<RadzenFormField Text="Pre start script" Variant="@Variant.Outlined">
+	<ScriptEditor @ref="preStartScriptEditor"
+				  ScriptEditorType="@ScriptEditorType"
+				  Script="@(Model?.PreStartScript)"
+				  ScriptEngine="@ScriptEngine"
+				  Height="200px" />
+</RadzenFormField>
+
+<RadzenFormField Text="Step function" Variant="@Variant.Outlined">
+	<ScriptEditor @ref="stepScriptEditor"
+				  ScriptEditorType="@ScriptEditorType"
+				  Script="@(Model?.Script)"
+				  ScriptEngine="@ScriptEngine"
+				  Height="200px" />
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public StepScript Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	ScriptEditor? preStartScriptEditor;
+	ScriptEditor? stepScriptEditor;
+
+	public async Task SaveChangesAsync()
+	{
+		if (preStartScriptEditor is not null)
+		{
+			Model.PreStartScript = await preStartScriptEditor.GetScriptAsync();
+		}
+		if (stepScriptEditor is not null)
+		{
+			Model.Script = await stepScriptEditor.GetScriptAsync();
+		}
+	}
+}

@@ -1,5 +1,6 @@
 ﻿@using Radzen
 @using Radzen.Blazor
+@using Tuat.Interfaces
 @using Tuat.Models
 @inject Tuat.Interfaces.IDataService DataService
 
@@ -9,5 +10,10 @@
 	[Parameter]
 	public StepOr Model { get; set; } = null!;
 
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
 
 }
