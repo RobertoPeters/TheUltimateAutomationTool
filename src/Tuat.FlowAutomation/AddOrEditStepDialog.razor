@@ -68,7 +68,7 @@
 		}
 		if (!IsNew)
 		{
-			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, {"ScriptEngine", ScriptEngine } };
+			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, { "ScriptEngine", ScriptEngine }, { "Automation", Automation } };
 		}
 		base.OnInitialized();
 	}
@@ -84,7 +84,7 @@
 		if (!string.IsNullOrWhiteSpace(Model?.StepTypeName))
 		{
 			Model = (Step)Model.CopyObjectToOtherType(Generic.StepTypeDisplayNames.First(x => x.TypeName == Model.StepTypeName).Type)!;
-			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, { "ScriptEngine", ScriptEngine } };
+			SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model }, { "ScriptEditorType", ScriptEditorType }, { "ScriptEngine", ScriptEngine }, { "Automation", Automation } };
 		}
 	}
 

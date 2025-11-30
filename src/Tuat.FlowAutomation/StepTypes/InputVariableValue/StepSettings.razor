@@ -1,0 +1,37 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject Tuat.Interfaces.IDataService DataService
+
+
+<RadzenFormField Text="Variable name *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenDropDown Data="@inputParameters" TextProperty="@nameof(SubAutomationParameter.Name)" ValueProperty="@nameof(SubAutomationParameter.Id)" @bind-Value="@Model!.VariableId" Name="VariableId" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="VariableId" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public StepVariableValue Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	[Parameter]
+	public Automation? Automation { get; set; }
+
+	List<SubAutomationParameter>? inputParameters = null;
+
+	protected override void OnInitialized()
+	{
+		inputParameters = Automation?.SubAutomationParameters.Where(x => x.IsInput).ToList();
+	}
+
+}

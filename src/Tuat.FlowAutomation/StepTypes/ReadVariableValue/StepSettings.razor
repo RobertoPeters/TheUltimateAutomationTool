@@ -49,6 +49,9 @@
 	[Parameter]
 	public IScriptEngine? ScriptEngine { get; set; }
 
+	[Parameter]
+	public Automation? Automation { get; set; }
+
 	List<Client> _clients = null!;
 
 	protected override void OnInitialized()
