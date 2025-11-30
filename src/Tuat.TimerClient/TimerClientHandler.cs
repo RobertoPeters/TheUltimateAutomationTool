@@ -149,6 +149,10 @@ public class TimerClientHandler(Client _client, IVariableService _variableServic
         switch (command.ToLower())
         {
             case "start":
+                if (parameter1 != null && int.TryParse(parameter1.ToString(), out var newDuration))
+                {
+                    timer.Duration = TimeSpan.FromSeconds(newDuration);
+                }
                 result = timer.Start();
                 if (timer.IsRunning)
                 {
