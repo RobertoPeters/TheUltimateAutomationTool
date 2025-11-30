@@ -1,0 +1,34 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject Tuat.Interfaces.IDataService DataService
+
+<RadzenFormField Text="Variable name *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@Model!.VariableName" Name="VariableName" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="VariableName" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Timeout (seconds) *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenNumeric @bind-Value="@Model!.TimeoutSeconds" Name="Seconds" Min="1" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Seconds" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public StepTimer Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+}

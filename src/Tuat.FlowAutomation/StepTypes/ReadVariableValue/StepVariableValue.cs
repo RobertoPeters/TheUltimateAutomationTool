@@ -2,10 +2,10 @@
 using Tuat.Interfaces;
 using Tuat.Models;
 
-namespace Tuat.FlowAutomation.StepTypes.VariableValue;
+namespace Tuat.FlowAutomation.StepTypes.ReadVariableValue;
 
-[DisplayName("Variable (create)")]
-[Editor("Tuat.FlowAutomation.StepTypes.VariableValue.StepSettings", typeof(StepSettings))]
+[DisplayName("Variable (read)")]
+[Editor("Tuat.FlowAutomation.StepTypes.ReadVariableValue.StepSettings", typeof(StepSettings))]
 public class StepVariableValue: Step
 {
     public override List<Blazor.Diagrams.Core.Models.PortAlignment> OutputPorts { get; set; } = [Blazor.Diagrams.Core.Models.PortAlignment.Right];
@@ -13,14 +13,11 @@ public class StepVariableValue: Step
     public const string VariableNameKey = "VariableName";
     public const string ClientNameKey = "ClientName";
     public const string IsGlobalVariableKey = "IsGlobalVariable";
-    public const string IsPersistantKey = "IsPersistant";
-    public const string DataKey = "Data";
-    public const string MockingValuesKey = "MockingValues";
     public const string PayloadOnStartKey = "PayloadOnStart";
 
     public override string[] GetStepParameters()
     {
-        return [VariableNameKey, ClientNameKey, IsGlobalVariableKey, IsPersistantKey, DataKey, MockingValuesKey, PayloadOnStartKey];
+        return [VariableNameKey, ClientNameKey, IsGlobalVariableKey, PayloadOnStartKey];
     }
 
     public string? VariableName
@@ -51,38 +48,20 @@ public class StepVariableValue: Step
         set => this[PayloadOnStartKey] = value;
     }
 
-    public bool IsPersistant
-    {
-        get => (bool?)this[IsPersistantKey] ?? false;
-        set => this[IsPersistantKey] = value;
-    }
-
-    public string? Data
-    {
-        get => this[DataKey]?.ToString();
-        set => this[DataKey] = value;
-    }
-
-    public string? MockingValues
-    {
-        get => this[MockingValuesKey]?.ToString();
-        set => this[MockingValuesKey] = value;
-    }
-
     private int? variableId = null;
     private string? currentPayload = null;
 
-    public override async Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         var clientId = dataService.GetClients().Where(x => string.Compare(x.Name, ClientName, true) == 0).FirstOrDefault();
         if (VariableName != null && clientId != null)
         {
-            List<string>? mochingValues = null;
-            if (!string.IsNullOrWhiteSpace(MockingValues))
-            {
-                mochingValues = System.Text.Json.JsonSerializer.Deserialize<List<string>>(MockingValues);
-            }
-            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, automation.Id, IsPersistant, Data, mochingValues);
+            variableId = variableService.GetVariables().Where(x => x.Variable.Name == VariableName 
+                    && x.Variable.ClientId == clientId.Id 
+                    && ((!IsGlobalVariable && x.Variable.AutomationId == automation.Id)
+                        || (IsGlobalVariable && x.Variable.AutomationId == null))
+                    ).FirstOrDefault()?.Variable.Id;
+
             if (variableId != null)
             {
                 var variableInfo = variableService.GetVariable(variableId.Value);
@@ -94,7 +73,7 @@ public class StepVariableValue: Step
                 }
             }
         }
-        return null;
+        return Task.FromResult((string?)null);
     }
 
     public override async Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)

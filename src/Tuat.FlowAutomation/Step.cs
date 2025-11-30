@@ -76,6 +76,31 @@ public class Step
         {
             if (StepParameters.TryGetValue(key, out var value))
             {
+                if (value is System.Text.Json.JsonElement jsonElement)
+                {
+                    switch (jsonElement.ValueKind)
+                    {
+                        case System.Text.Json.JsonValueKind.String:
+                            return jsonElement.GetString();
+                        case System.Text.Json.JsonValueKind.Number:
+                            if (jsonElement.TryGetInt32(out var intValue))
+                            {
+                                return intValue;
+                            }
+                            if (jsonElement.TryGetDouble(out var doubleValue))
+                            {
+                                return doubleValue;
+                            }
+                            break;
+                        case System.Text.Json.JsonValueKind.True:
+                        case System.Text.Json.JsonValueKind.False:
+                            return jsonElement.GetBoolean();
+                        case System.Text.Json.JsonValueKind.Null:
+                            return null;
+                        default:
+                            return jsonElement.GetRawText();
+                    }
+                }
                 return value;
             }
             return null;
