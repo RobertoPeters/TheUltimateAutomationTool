@@ -21,6 +21,11 @@ public class StepTimer : Step
 
     public override List<Blazor.Diagrams.Core.Models.PortAlignment> InputPorts { get; set; } = [Blazor.Diagrams.Core.Models.PortAlignment.Left, Blazor.Diagrams.Core.Models.PortAlignment.Top];
 
+    public override Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, string> PortText { get; set; } = new Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, string>
+    {
+        {Blazor.Diagrams.Core.Models.PortAlignment.Top, "Timeout"}
+    };
+
     private int? variableId = null;
     private int? clientId = null;
     private bool timerIsRunning = false;

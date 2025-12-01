@@ -37,6 +37,8 @@ public class Step
     public virtual List<Blazor.Diagrams.Core.Models.PortAlignment> InputPorts { get; set; } = [];
     [JsonIgnore]
     public virtual List<Blazor.Diagrams.Core.Models.PortAlignment> OutputPorts { get; set; } = [];
+    [JsonIgnore]
+    public virtual Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, string> PortText { get; set; } = [];
 
     [JsonIgnore]
     public List<Payload> Payloads { get; set; } = [];

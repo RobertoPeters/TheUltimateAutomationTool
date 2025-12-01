@@ -11,6 +11,10 @@
     {
         <PortRenderer @key="port" Port="port" Class="default"></PortRenderer>
     }
+    @if (Node.Step.PortText.TryGetValue(Blazor.Diagrams.Core.Models.PortAlignment.Top, out var txt))
+    {
+        <div style="position: absolute; width: 100%; text-align: center; right: 8px; top: 8px; z-index: 1;">@txt</div>
+    }
     <div style="position: absolute; right: 8px; bottom: 8px; z-index: 1;">@GetPayloadText(Blazor.Diagrams.Core.Models.PortAlignment.Right)</div>
 </div>
 
