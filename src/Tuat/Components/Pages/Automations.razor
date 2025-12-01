@@ -108,7 +108,7 @@
         public int EditId => 0;
         public int Id => AutomationHandler.Automation.Id;
         public string Name => AutomationHandler.Automation.Name;
-        public string AutomationType => Tuat.Generic.AutomationTypeDisplayNames.FirstOrDefault(x => x.TypeName == AutomationHandler.Automation.AutomationType)?.DisplayName ?? "";
+        public string AutomationType => Tuat.Helpers.Generics.Generic.AutomationTypeDisplayNames.FirstOrDefault(x => x.TypeName == AutomationHandler.Automation.AutomationType)?.DisplayName ?? "";
         public bool Enabled => AutomationHandler.Automation.Enabled;
         public string EnabledText()
         {

@@ -1,7 +1,21 @@
-﻿namespace Tuat.StateMachineAutomation;
+﻿namespace Tuat.Extensions;
 
 public static class ObjectExtensions
 {
+    public static object? CopyObject<T>(this T target, Type useType) where T : new()
+    {
+        var result = default(T);
+        if (target != null)
+        {
+            var s = System.Text.Json.JsonSerializer.Serialize(target);
+            if (s != null)
+            {
+                result = (T?)System.Text.Json.JsonSerializer.Deserialize(s, useType);
+            }
+        }
+        return result;
+    }
+
     public static T? CopyObject<T>(this T target) where T : new()
     {
         var result = default(T);
@@ -25,6 +39,20 @@ public static class ObjectExtensions
             if (s != null)
             {
                 result = (TResult?)System.Text.Json.JsonSerializer.Deserialize(s, typeof(TResult));
+            }
+        }
+        return result;
+    }
+
+    public static object? CopyObjectToOtherType<T>(this T target, Type returnType)
+    {
+        object? result = null;
+        if (target != null)
+        {
+            var s = System.Text.Json.JsonSerializer.Serialize(target);
+            if (s != null)
+            {
+                result = System.Text.Json.JsonSerializer.Deserialize(s, returnType);
             }
         }
         return result;

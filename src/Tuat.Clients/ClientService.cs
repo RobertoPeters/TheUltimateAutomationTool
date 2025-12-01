@@ -97,16 +97,7 @@ public class ClientService(IDataService _dataService, IVariableService _variable
     {
         IClientHandler? clientHandler = null;
         
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == client.ClientType)
-                   select a).FirstOrDefault();
-
-        if (asm == null)
-        {
-            return null;
-        }
-
-        var type = asm.GetTypes().First(x => x.FullName == client.ClientType);
+        var type = Tuat.Helpers.Generics.Generic.ComponentType(client.ClientType);
         clientHandler = (IClientHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { client, _variableService, _messageBusService }, null);
 
         if (clientHandler != null)

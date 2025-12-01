@@ -101,16 +101,7 @@ public class AutomationService(IDataService _dataService, IClientService _client
     {
         IAutomationHandler? automationHandler = null;
 
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == automation.AutomationType)
-                   select a).FirstOrDefault();
-
-        if (asm == null)
-        {
-            return null;
-        }
-
-        var type = asm.GetTypes().First(x => x.FullName == automation.AutomationType);
+        var type = Tuat.Helpers.Generics.Generic.ComponentType(automation.AutomationType)!;
         automationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
 
         if (automationHandler != null)

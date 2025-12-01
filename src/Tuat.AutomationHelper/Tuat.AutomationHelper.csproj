@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Tuat.Helpers\Tuat.Helpers.csproj" />
     <ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
   </ItemGroup>
 

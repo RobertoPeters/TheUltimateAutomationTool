@@ -34,8 +34,15 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (_reference == null)
             return;
 
-        if (elementReference.Id != null)
-            await JSRuntime.UnobserveResizes(elementReference);
+        try
+        {
+            if (elementReference.Id != null)
+                await JSRuntime.UnobserveResizes(elementReference);
+        }
+        catch
+        {
+            // ignore
+        }
 
         _reference.Dispose();
         _reference = null!;

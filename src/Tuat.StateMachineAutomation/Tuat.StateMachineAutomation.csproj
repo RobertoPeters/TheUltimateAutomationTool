@@ -24,6 +24,7 @@
 		<ProjectReference Include="..\Blazor.Diagrams\Blazor.Diagrams\Blazor.Diagrams.csproj" />
 		<ProjectReference Include="..\Tuat.AutomationHelper\Tuat.AutomationHelper.csproj" />
 		<ProjectReference Include="..\Tuat.Dialogs\Tuat.Dialogs.csproj" />
+		<ProjectReference Include="..\Tuat.Helpers\Tuat.Helpers.csproj" />
 		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
 	</ItemGroup>
 

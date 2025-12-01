@@ -11,7 +11,7 @@
         <RadzenStack>
             <RadzenFormField Text="Type *" Variant="@Variant.Outlined">
                 <ChildContent>
-                    <RadzenDropDown Data="Tuat.Generic.ClientTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.ClientType" Name="ClientType" Disabled=@((Id ?? 0) != 0) />
+                    <RadzenDropDown Data="Tuat.Helpers.Generics.Generic.ClientTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.ClientType" Name="ClientType" Disabled=@((Id ?? 0) != 0) />
                 </ChildContent>
                 <Helper>
                     <RadzenRequiredValidator Component="ClientType" Text="This field is required" />
@@ -80,7 +80,7 @@
 
     Type? SettingsComponentType()
     {
-        return string.IsNullOrWhiteSpace(Model?.ClientType) ? null : Tuat.Generic.ClientTypeDisplayNames.First(x => x.TypeName == Model.ClientType).SettingsEditorComponentType;
+        return string.IsNullOrWhiteSpace(Model?.ClientType) ? null : Tuat.Helpers.Generics.Generic.ClientTypeDisplayNames.First(x => x.TypeName == Model.ClientType).SettingsEditorComponentType;
     }
 
     async Task OnSubmit()

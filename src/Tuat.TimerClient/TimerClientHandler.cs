@@ -58,7 +58,7 @@ public class TimerClientHandler(Client _client, IVariableService _variableServic
 
     public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() =>
         [
-            ("startTimer", "start", "start a timer.", """startTimer(timer1)"""),
+            ("startTimer", "start", "start a timer with optional a different timeout.", """startTimer(timer1) or startTimer(timer1, 10)"""),
             ("stopTimer", "stop", "stop a timer.", """stopTimer(timer1)"""),
         ];
 

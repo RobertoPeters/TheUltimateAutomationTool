@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace Tuat.ScriptEnginePython;
+namespace Tuat.Extensions;
 
 public static class TimeSpanExtensions
 {

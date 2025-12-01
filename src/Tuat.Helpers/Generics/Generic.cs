@@ -1,23 +1,12 @@
 ﻿using JasperFx.Core.Reflection;
 
-namespace Tuat;
+namespace Tuat.Helpers.Generics;
 
 public static class Generic
 {
-    public class TypeDisplayName
-    {
-        public string TypeName { get; set; } = null!;
-        public Type Type { get; set; } = null!;
-        public string DisplayName { get; set; } = null!;
-        public string? SettingsEditorType { get; set; } = null!;
-        public Type? SettingsEditorComponentType { get; set; } = null!;
-        public string? EditorType { get; set; } = null!;
-        public Type? EditorComponentType { get; set; } = null!;
-    }
-
     private static readonly object _lockObject = new object();
 
-    private static Type? ComponentType(string? typeName)
+    public static Type? ComponentType(string? typeName)
     {
         if (string.IsNullOrWhiteSpace(typeName))
         {
@@ -43,7 +32,7 @@ public static class Generic
         {
             if (_clientTypeDisplayNames == null)
             {
-                lock(_lockObject)
+                lock (_lockObject)
                 {
                     if (_clientTypeDisplayNames == null)
                     {
@@ -55,7 +44,7 @@ public static class Generic
                         List<TypeDisplayName> items = [];
                         foreach (var type in types)
                         {
-                            if (type .IsInterface || type.IsAbstract)
+                            if (type.IsInterface || type.IsAbstract)
                             {
                                 continue;
                             }

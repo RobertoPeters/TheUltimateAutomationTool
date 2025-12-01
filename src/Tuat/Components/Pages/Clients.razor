@@ -47,7 +47,7 @@
 								  Property="Client.ClientType"
 								  Title="Type">
 				<Template Context="client">
-					@(Tuat.Generic.ClientTypeDisplayNames.FirstOrDefault(x => x.TypeName == client.Client.ClientType)?.DisplayName ?? client.Client.ClientType)
+					@(Tuat.Helpers.Generics.Generic.ClientTypeDisplayNames.FirstOrDefault(x => x.TypeName == client.Client.ClientType)?.DisplayName ?? client.Client.ClientType)
 				</Template>
 			</RadzenDataGridColumn>
 

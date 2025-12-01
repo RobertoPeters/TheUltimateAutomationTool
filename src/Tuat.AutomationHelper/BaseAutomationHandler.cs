@@ -84,11 +84,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
         DisposeSubAutomation();
 
         var automation = _dataService.GetAutomations().First(x => x.Id == automationId);
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == automation.AutomationType)
-                   select a).FirstOrDefault();
-
-        var type = asm!.GetTypes().First(x => x.FullName == automation.AutomationType);
+        var type = Tuat.Helpers.Generics.Generic.ComponentType(automation.AutomationType)!;
         _subAutomationHandler = (IAutomationHandler?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new object[] { automation, _clientService, _dataService, _variableService, _messageBusService }, null);
         _subAutomationHandler!.OnAutomationFinished += OnSubAutomationFinished;
         _subAutomationHandler.OnLogEntry += OnSubAutomationLogEntry;
@@ -256,17 +252,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
     public static IScriptEngine? GetScriptEngine(string scriptType)
     {
         IScriptEngine? scriptEngine = null;
-
-        var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
-                   where a.GetTypes().Any(x => x.FullName == scriptType)
-                   select a).FirstOrDefault();
-
-        if (asm == null)
-        {
-            return null;
-        }
-
-        var type = asm.GetTypes().First(x => x.FullName == scriptType);
+        var type = Tuat.Helpers.Generics.Generic.ComponentType(scriptType)!;
         scriptEngine = (IScriptEngine?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, null);
         return scriptEngine;
     }

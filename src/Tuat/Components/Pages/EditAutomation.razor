@@ -121,12 +121,12 @@ else
 
 	Type? EditorComponentType()
 	{
-		return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Automation.AutomationType).EditorComponentType;
+		return string.IsNullOrWhiteSpace(Automation?.AutomationType) ? null : Tuat.Helpers.Generics.Generic.AutomationTypeDisplayNames.First(x => x.TypeName == Automation.AutomationType).EditorComponentType;
 	}
 
 	Type? ScriptEditorComponentType()
 	{
-		return string.IsNullOrWhiteSpace(Automation?.ScriptType) ? null : Tuat.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
+		return string.IsNullOrWhiteSpace(Automation?.ScriptType) ? null : Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.First(x => x.TypeName == Automation.ScriptType).EditorComponentType;
 	}
 
 	async Task ReloadAutomationAsync(Automation? useAutomation)

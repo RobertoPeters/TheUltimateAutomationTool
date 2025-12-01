@@ -1,4 +1,4 @@
-﻿namespace Tuat.StateMachineAutomation;
+﻿namespace Tuat.Helpers;
 
 public class UndoRedo<T> where T : IEquatable<T>
 {
