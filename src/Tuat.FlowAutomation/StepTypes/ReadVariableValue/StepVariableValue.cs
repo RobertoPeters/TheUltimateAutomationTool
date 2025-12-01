@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Tuat.Extensions;
 using Tuat.Interfaces;
 using Tuat.Models;
 
@@ -49,7 +50,7 @@ public class StepVariableValue: Step
     }
 
     private int? variableId = null;
-    private string? currentPayload = null;
+    private object? currentPayload = null;
 
     public override Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
@@ -65,7 +66,7 @@ public class StepVariableValue: Step
             if (variableId != null)
             {
                 var variableInfo = variableService.GetVariable(variableId.Value);
-                currentPayload = variableInfo?.Value;
+                currentPayload = variableInfo?.Value.AutoConvert();
 
                 if (PayloadOnStart)
                 {
@@ -81,7 +82,7 @@ public class StepVariableValue: Step
         if (variableId != null)
         {
             var variableInfo = variableService.GetVariable(variableId.Value);
-            var newPayload = variableInfo?.Value;
+            var newPayload = variableInfo?.Value.AutoConvert();
 
             if (Payloads[0].UpdateData(newPayload))
             {

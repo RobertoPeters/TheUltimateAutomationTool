@@ -77,7 +77,7 @@ internal class SystemMethods
         return _variableService.SetVariableValuesAsync([(variableId, value)]).Result;
     }
 
-    public string? getVariableValue(int variableId)
+    public object? getVariableValue(int variableId)
     {
         return _variableService.GetVariable(variableId)?.Value;
     }

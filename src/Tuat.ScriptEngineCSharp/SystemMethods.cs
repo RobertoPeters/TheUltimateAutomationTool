@@ -69,14 +69,14 @@ public class SystemMethods
         return variable?.Variable.Id;
     }
 
-    public bool SetVariableValue(int variableId, string? value)
+    public bool SetVariableValue(int variableId, object? value)
     {
-        return _variableService.SetVariableValuesAsync([(variableId, value)]).Result;
+        return _variableService.SetVariableValuesAsync([(variableId, value?.ToString())]).Result;
     }
 
-    public string? GetVariableValue(int variableId)
+    public object? GetVariableValue(int variableId)
     {
-        return _variableService.GetVariable(variableId)?.Value;
+        return _variableService.GetVariable(variableId)?.Value.AutoConvert();
     }
 
     public bool IsMockingVariableActive(int variableId)
@@ -187,7 +187,7 @@ public class SystemMethods
     }
 
     // sets the variable value (returns true if successful, false otherwise)
-    bool SetVariableValue(int variableId, string? variableValue) 
+    bool SetVariableValue(int variableId, object? variableValue) 
     {
         return _systemMethods.SetVariableValue(variableId, variableValue);
     }

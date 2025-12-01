@@ -76,9 +76,9 @@ public class SystemMethods
         return _variableService.SetVariableValuesAsync([(variableId, value)]).Result;
     }
 
-    public string? GetVariableValue(int variableId)
+    public object? GetVariableValue(int variableId)
     {
-        return _variableService.GetVariable(variableId)?.Value;
+        return _variableService.GetVariable(variableId)?.Value.AutoConvert();
     }
 
     public bool IsMockingVariableActive(int variableId)
