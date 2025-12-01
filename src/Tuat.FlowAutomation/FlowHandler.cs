@@ -85,7 +85,7 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
 
             inputPayloads.Add(inputPort, payloads.ToList());
         }
-        var changedPorts = step.ProcessAsync(inputPayloads, scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
+        var changedPorts = step.ProcessAsync(this, inputPayloads, scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
 
         if (changedPorts.Any())
         {

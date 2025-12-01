@@ -164,7 +164,7 @@
 		if (Model.SubStateMachineId != null)
 		{
 			var stateMachine = SubAutomations.First(x => x.Id == Model.SubStateMachineId);
-			foreach (var parameter in stateMachine.SubAutomationParameters)
+			foreach (var parameter in stateMachine.SubAutomationParameters.Where(x => x.IsInput))
 			{
 				Model.SubStateParameters.Add(new SubStateParameter() { Id = parameter.Id });
 				SubStateMachineVariables.Add(new StateMachineVariable(parameter, Model.SubStateParameters[Model.SubStateParameters.Count - 1]));
