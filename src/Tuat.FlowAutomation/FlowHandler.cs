@@ -9,7 +9,7 @@ using Tuat.Models;
 
 namespace Tuat.FlowAutomation;
 
-[DisplayName("Flow (under construction)")]
+[DisplayName("Flow")]
 [Editor("Tuat.FlowAutomation.AutomationSettings", typeof(AutomationSettings))]
 [Editor("Tuat.FlowAutomation.Editor", typeof(Editor))]
 public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomationHandler
