@@ -34,7 +34,7 @@ public class StepVariableValue : Step
 
     private bool payloadSet = false;
 
-    public override Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override Task<string?> SetupAsync(FlowHandler instance, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         return Task.FromResult((string?)null);
     }

@@ -29,6 +29,7 @@ public abstract class BaseAutomationHandler<T> where T: new()
     protected T _automationProperties = new();
 
     public Automation Automation => _automation;
+    public int? TopAutomationId => _topAutomation;
     public string? ErrorMessage { get; protected set; }
     public event EventHandler<List<AutomationOutputVariable>>? OnAutomationFinished;
     public event EventHandler<LogEntry>? OnLogEntry;

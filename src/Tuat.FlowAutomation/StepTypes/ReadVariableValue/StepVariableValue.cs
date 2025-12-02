@@ -52,14 +52,14 @@ public class StepVariableValue: Step
     private int? variableId = null;
     private object? currentPayload = null;
 
-    public override Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override Task<string?> SetupAsync(FlowHandler instance, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         var clientId = dataService.GetClients().Where(x => string.Compare(x.Name, ClientName, true) == 0).FirstOrDefault();
         if (VariableName != null && clientId != null)
         {
             variableId = variableService.GetVariables().Where(x => x.Variable.Name == VariableName 
                     && x.Variable.ClientId == clientId.Id 
-                    && ((!IsGlobalVariable && x.Variable.AutomationId == automation.Id)
+                    && ((!IsGlobalVariable && x.Variable.AutomationId == (instance.TopAutomationId ?? automation.Id))
                         || (IsGlobalVariable && x.Variable.AutomationId == null))
                     ).FirstOrDefault()?.Variable.Id;
 

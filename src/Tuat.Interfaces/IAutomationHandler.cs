@@ -3,6 +3,7 @@
 public interface IAutomationHandler : IDisposable
 {
     Models.Automation Automation { get; }
+    public int? TopAutomationId { get; }
     void RequestTriggerProcess();
     void TriggerProcess();
     void Start(Guid? instanceId = null, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null);

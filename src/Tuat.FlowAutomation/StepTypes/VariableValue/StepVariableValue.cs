@@ -73,7 +73,7 @@ public class StepVariableValue: Step
     private int? variableId = null;
     private object? currentPayload = null;
 
-    public override async Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task<string?> SetupAsync(FlowHandler instance, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         var clientId = dataService.GetClients().Where(x => string.Compare(x.Name, ClientName, true) == 0).FirstOrDefault();
         if (VariableName != null && clientId != null)
@@ -83,7 +83,7 @@ public class StepVariableValue: Step
             {
                 mochingValues = System.Text.Json.JsonSerializer.Deserialize<List<string>>(MockingValues);
             }
-            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, automation.Id, IsPersistant, Data, mochingValues);
+            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Id, instance.TopAutomationId ?? automation.Id, IsPersistant, Data, mochingValues);
             if (variableId != null)
             {
                 var variableInfo = variableService.GetVariable(variableId.Value);

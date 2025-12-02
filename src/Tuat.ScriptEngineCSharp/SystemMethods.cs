@@ -181,7 +181,7 @@ public class SystemMethods
     }
 
     // returns the variable value
-    string? GetVariableValue(int variableId) 
+    object? GetVariableValue(int variableId) 
     {
         return _systemMethods.GetVariableValue(variableId);
     }

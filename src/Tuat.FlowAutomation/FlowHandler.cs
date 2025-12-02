@@ -44,7 +44,7 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
         }
         foreach (var step in _steps)
         {
-            var additionalScriptForStep = step.SetupAsync(scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
+            var additionalScriptForStep = step.SetupAsync(this, scriptEngine, Automation, _clientService, _dataService, _variableService, _messageBusService).Result;
             if (!string.IsNullOrWhiteSpace(additionalScriptForStep))
             {
                 additionalScript.AppendLine(additionalScriptForStep);

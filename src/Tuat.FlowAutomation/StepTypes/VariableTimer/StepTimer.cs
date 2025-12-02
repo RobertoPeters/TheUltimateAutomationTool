@@ -31,12 +31,12 @@ public class StepTimer : Step
     private bool timerIsRunning = false;
     private int currentTimeout = 0;
 
-    public override async Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override async Task<string?> SetupAsync(FlowHandler instance, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         clientId = dataService.GetClients().Where(x => string.Compare(x.Name, "Timer", true) == 0).FirstOrDefault()?.Id;
         if (VariableName != null && clientId != null)
         {
-            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Value, automation.Id, false, TimeoutSeconds.ToString(), ["0", "10"]);
+            variableId = await variableService.CreateVariableAsync(VariableName, clientId.Value, instance.TopAutomationId ?? automation.Id, false, TimeoutSeconds.ToString(), ["0", "10"]);
             currentTimeout = TimeoutSeconds!.Value;
         }
         return null;

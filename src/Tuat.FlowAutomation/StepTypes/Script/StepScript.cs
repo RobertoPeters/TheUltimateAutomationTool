@@ -16,7 +16,7 @@ public class StepScript : Step
     public const string PreStartScriptKey = "PreStartScript";
     public const string ScriptKey = "Script";
 
-    public override Task<string?> SetupAsync(IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
+    public override Task<string?> SetupAsync(FlowHandler instance, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
         var setupScript = new StringBuilder();
         if (!string.IsNullOrWhiteSpace(PreStartScript))

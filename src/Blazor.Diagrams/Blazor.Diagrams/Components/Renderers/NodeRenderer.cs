@@ -35,7 +35,14 @@ public class NodeRenderer : ComponentBase, IDisposable
 
         if (_element.Id != null && !Node.ControlledSize)
         {
-            _ = JsRuntime.UnobserveResizes(_element);
+            try
+            {
+                _ = JsRuntime.UnobserveResizes(_element);
+            }
+            catch
+            {
+                //ignore
+            }
         }
 
         _reference?.Dispose();

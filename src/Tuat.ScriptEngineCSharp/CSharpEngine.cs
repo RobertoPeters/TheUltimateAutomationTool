@@ -19,7 +19,7 @@ public class CSharpEngine : IScriptEngine
 
     public void Initialize(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid instanceId, string? additionalScript, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
-        additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
+         additionalScript = $"{additionalScript}\r\n{GetUserMethodsMapping()}";
         var systemMethods = new SystemMethods(clientService, dataService, variableService, automationHandler, topAutomationId);
         scriptApi._systemMethods = systemMethods;
         var systemScript = GetSystemScript(clientService, instanceId, additionalScript, subAutomationParameters: automationHandler.Automation.SubAutomationParameters, inputValues: InputValues);

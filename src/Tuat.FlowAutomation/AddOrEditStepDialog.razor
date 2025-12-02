@@ -15,7 +15,15 @@
 			</RadzenFormField>
 			<RadzenFormField Text="Type *" Variant="@Variant.Outlined">
 				<ChildContent>
-					<RadzenDropDown Data="Generic.StepTypeDisplayNames" Change="ChangeStepType" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model!.StepTypeName" Name="StepType" Disabled=@(!IsNew) />
+					<RadzenDropDown Data="Generic.StepTypeDisplayNames"
+									Change="ChangeStepType"
+									ValueProperty="TypeName"
+									TextProperty="DisplayName"
+									AllowFiltering="true"
+									PopupStyle="height: 200px;"
+									@bind-Value="@Model!.StepTypeName"
+									Name="StepType"
+									Disabled=@(!IsNew) />
 				</ChildContent>
 				<Helper>
 					<RadzenRequiredValidator Component="StepType" Text="This field is required" />
@@ -25,9 +33,9 @@
 			{
 				<DynamicComponent @ref="stepTypeProperties" Type="@(SettingsComponentType())" Parameters="SettingsPropertiesParameters" />
 			}
-			</RadzenStack>
-			<RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
-		</RadzenTemplateForm>
+		</RadzenStack>
+		<RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+	</RadzenTemplateForm>
 }
 
 @code {
