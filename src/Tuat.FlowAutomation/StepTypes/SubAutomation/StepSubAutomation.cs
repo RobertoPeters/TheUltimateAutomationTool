@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Data;
+using Tuat.Extensions;
 using Tuat.Interfaces;
 using Tuat.Models;
 
@@ -92,10 +93,10 @@ public class StepSubAutomation : Step
             foreach (var subStateVariable in subFlowParameters)
             {
                 var subAutomationParameter = subAutomationParameters.FirstOrDefault(x => x.Id == subStateVariable.Id);
-                var scriptVariable = scriptVariables.FirstOrDefault(x => x.Name == subStateVariable.ScriptVariableName);
                 if (subAutomationParameter != null)
                 {
-                    inputVariables.Add(new AutomationInputVariable() { Name = subAutomationParameter.Name, Value = scriptVariable?.Value });
+                    var scriptVariable = subStateVariable.IsScriptVariable ? scriptVariables.FirstOrDefault(x => x.Name == subStateVariable.ScriptVariable)?.Value : subStateVariable.ScriptVariable.AutoConvert();
+                    inputVariables.Add(new AutomationInputVariable() { Name = subAutomationParameter.Name, Value = scriptVariable });
                 }
             }
         }
@@ -109,7 +110,7 @@ public class StepSubAutomation : Step
     }
     public List<SubFlowParameter>? SubFlowParameters
     {
-        get => string.IsNullOrWhiteSpace(this[SubFlowParametersKey]?.ToString()) ? null : System.Text.Json.JsonSerializer.Deserialize<List<SubFlowParameter>?>(this[SubFlowParametersKey]?.ToString()!);
+        get => string.IsNullOrWhiteSpace(this[SubFlowParametersKey]?.ToString()) ? [] : System.Text.Json.JsonSerializer.Deserialize<List<SubFlowParameter>>(this[SubFlowParametersKey].ToString()!);
         set => this[SubFlowParametersKey] = value;
     }
 }

@@ -1,7 +1,9 @@
 ﻿@using Radzen
 @using Radzen.Blazor
+@using Tuat.Extensions
 @using Tuat.Interfaces
 @using Tuat.Models
+@implements IStepSettings
 @inject Tuat.Interfaces.IDataService DataService
 
 <RadzenFormField Text="Sub automation" Variant="@Variant.Outlined">
@@ -21,10 +23,23 @@
 			<Columns>
 				<RadzenDataGridColumn Property="SubAutomationParameter.Name" Title="Name">
 				</RadzenDataGridColumn>
-				<RadzenDataGridColumn Property="SubFlowParameter.ScriptVariableName" Title="Script variable name">
+				<RadzenDataGridColumn Property="SubFlowParameter.ScriptVariable" Title="Value / Script variable name">
 					<EditTemplate Context="parameter">
-						<RadzenTextBox Style="width:200px; display: block" @bind-Value="parameter.SubFlowParameter.ScriptVariableName" Name="ScriptVariableName" />
-						<RadzenRequiredValidator Text="Script variable name is required" Component="ScriptVariableName" Popup="true" />
+						<RadzenTextBox Style="width:200px; display: block" @bind-Value="parameter.SubFlowParameter.ScriptVariable" Name="ScriptVariable" />
+						<RadzenRequiredValidator Text="Script variable name is required" Component="ScriptVariable" Popup="true" />
+					</EditTemplate>
+				</RadzenDataGridColumn>
+				<RadzenDataGridColumn Property="SubFlowParameter.IsScriptVariable" Title="Script variable">
+					<Template Context="parameter">
+						@(parameter.SubFlowParameter.IsScriptVariable ? "Script variable name" : "Parameter value")
+					</Template>
+					<EditTemplate Context="parameter">
+						<RadzenRadioButtonList @bind-Value="@parameter.SubFlowParameter.IsScriptVariable" TValue="bool" class="rz-m-4 rz-mt-8">
+							<Items>
+								<RadzenRadioButtonListItem Text="Yes" Value="true" />
+								<RadzenRadioButtonListItem Text="No" Value="false" />
+							</Items>
+						</RadzenRadioButtonList>
 					</EditTemplate>
 				</RadzenDataGridColumn>
 				<RadzenDataGridColumn Context="parameter" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
@@ -58,23 +73,21 @@
 
 	public class FlowVariable(SubAutomationParameter subAutomationParameter, SubFlowParameter subFlowParameter)
 	{
-		public SubAutomationParameter SubAutomationParameter { get; private set; } = subAutomationParameter;
-		public SubFlowParameter SubFlowParameter { get; private set; } = subFlowParameter;
+		public SubAutomationParameter SubAutomationParameter { get; set; } = subAutomationParameter;
+		public SubFlowParameter SubFlowParameter { get; set; } = subFlowParameter;
 	}
 	private readonly List<FlowVariable> SubFlowVariables = [];
 	private readonly List<FlowVariable> parametersToUpdate = [];
 	private RadzenDataGrid<FlowVariable>? parametersGrid;
 	private List<Automation> SubAutomations { get; set; } = [];
+	private List<SubFlowParameter> modelSubFlowParameters = [];
 
 	protected override void OnInitialized()
 	{
 		SubAutomations = DataService.GetAutomations()
 			.Where(sm => sm.IsSubAutomation)
 			.ToList();
-		if (Model.SubFlowParameters == null)
-		{
-			Model.SubFlowParameters = [];
-		}
+		modelSubFlowParameters = Model.SubFlowParameters ?? [];
 
 		if (Model.AutomationId != null)
 		{
@@ -82,36 +95,42 @@
 			if (subAutomation == null)
 			{
 				Model.AutomationId = null;
-				Model.SubFlowParameters.Clear();
 			}
 			else
 			{
 				foreach (var parameter in subAutomation.SubAutomationParameters.Where(x => x.IsInput))
 				{
-					var subVar = Model.SubFlowParameters.FirstOrDefault(x => x.Id == parameter.Id);
+					var subVar = modelSubFlowParameters.FirstOrDefault(x => x.Id == parameter.Id);
 					if (subVar == null)
 					{
 						subVar = new SubFlowParameter() { Id = parameter.Id };
-						Model.SubFlowParameters.Add(subVar);
+						modelSubFlowParameters.Add(subVar);
 					}
+					subVar = subVar.CopyObject()!;
 					SubFlowVariables.Add(new FlowVariable(parameter, subVar));
 				}
 			}
 		}
 		base.OnInitialized();
 	}
-	private void OnSubAutomationChanged(object? value)
+
+	public async Task SaveChangesAsync()
+	{
+		Model!.SubFlowParameters = modelSubFlowParameters;
+	}
+
+	void OnSubAutomationChanged(object? value)
 	{
 		SubFlowVariables.Clear();
-		Model!.SubFlowParameters.Clear();
+		modelSubFlowParameters.Clear();
 		if (Model.AutomationId != null)
 		{
 			var subauto = SubAutomations.First(x => x.Id == Model.AutomationId);
 			foreach (var parameter in subauto.SubAutomationParameters.Where(x => x.IsInput))
 			{
 				var subVar = new SubFlowParameter() { Id = parameter.Id };
-				Model.SubFlowParameters.Add(subVar);
 				SubFlowVariables.Add(new FlowVariable(parameter, subVar));
+				modelSubFlowParameters.Add(subVar.CopyObject()!);
 			}
 		}
 		parametersGrid!.Reload();
@@ -125,10 +144,10 @@
 	void OnUpdateRow(FlowVariable parameter)
 	{
 		Reset(parameter);
-		var index = Model!.SubFlowParameters.FindIndex(x => x.Id == parameter.SubFlowParameter.Id);
+		var index = modelSubFlowParameters!.FindIndex(x => x.Id == parameter.SubFlowParameter.Id);
 		if (index >= 0)
 		{
-			Model!.SubFlowParameters[index] = parameter.SubFlowParameter;
+			modelSubFlowParameters[index] = parameter.SubFlowParameter.CopyObject()!;
 		}
 	}
 
@@ -148,7 +167,9 @@
 	void CancelEdit(FlowVariable parameter)
 	{
 		Reset(parameter);
-
+		var index = modelSubFlowParameters!.FindIndex(x => x.Id == parameter.SubFlowParameter.Id);
+		var org = modelSubFlowParameters[index].CopyObject()!;
+		parameter.SubFlowParameter = org;
 		parametersGrid!.CancelEditRow(parameter);
 	}
 }
