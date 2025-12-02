@@ -72,19 +72,15 @@
 	private readonly List<FlowVariable> SubFlowVariables = [];
 	private readonly List<FlowVariable> parametersToUpdate = [];
 	private RadzenDataGrid<FlowVariable>? parametersGrid;
-	private List<Automation> SubAutomations { get; set; } = [];
 	private List<SubFlowParameter> modelSubFlowParameters = [];
 
 	protected override void OnInitialized()
 	{
-		SubAutomations = DataService.GetAutomations()
-			.Where(sm => sm.IsSubAutomation)
-			.ToList();
 		modelSubFlowParameters = Model.SubFlowParameters ?? [];
 
-		if (Model.Automation != null)
+		if (Automation != null)
 		{
-			foreach (var parameter in Model.Automation.SubAutomationParameters.Where(x => x.IsOutput))
+			foreach (var parameter in Automation.SubAutomationParameters.Where(x => x.IsOutput))
 			{
 				var subVar = modelSubFlowParameters.FirstOrDefault(x => x.Id == parameter.Id);
 				if (subVar == null)

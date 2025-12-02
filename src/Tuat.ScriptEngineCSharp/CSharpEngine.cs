@@ -51,6 +51,10 @@ public class CSharpEngine : IScriptEngine
                 {
                     valueText = "null";
                 }
+                else if (variable.Value is bool b)
+                {
+                    valueText = $"{(b ? "true" : "false")}";
+                }
                 else if (variable.Value is string)
                 {
                     valueText = $"\"{variable.Value}\"";

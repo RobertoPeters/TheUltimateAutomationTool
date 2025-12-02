@@ -28,7 +28,8 @@ public static class JSRuntimeExtensions
     {
         try
         {
-            await jsRuntime.InvokeVoidAsync("ZBlazorDiagrams.unobserve", element, element.Id);
+            if (element.Id != null)
+                await jsRuntime.InvokeVoidAsync("ZBlazorDiagrams.unobserve", element, element.Id);
         }
         catch (JSDisconnectedException)
         {

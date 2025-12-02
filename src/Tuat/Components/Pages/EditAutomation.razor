@@ -190,6 +190,7 @@ else
 
 		InvokeAsync(() =>
 		{
+			bool needsReload = false;
 			var updatedScriptVariables = AutomationHandler.GetScriptVariables();
 			foreach(var updatedVar in updatedScriptVariables)
 			{
@@ -201,9 +202,17 @@ else
 				else
 				{
 					scriptVariables.Add(updatedVar);
+					needsReload = true;
 				}
 			}
-			variablesGrid?.RefreshDataAsync();
+			if (needsReload)
+			{
+				variablesGrid?.Reload();
+			}
+			else
+			{
+				variablesGrid?.RefreshDataAsync();
+			}
 			StateHasChanged();
 		});
 

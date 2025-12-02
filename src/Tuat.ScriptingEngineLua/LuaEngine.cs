@@ -61,6 +61,10 @@ public class LuaEngine : IScriptEngine
             {
                 valueText = $"\"{variable.Value}\"";
             }
+            else if (variable.Value is bool b)
+            {
+                valueText = $"{(b ? "true" : "false")}";
+            }
             else
             {
                 valueText = variable.Value.ToString()!.Replace(",",".");
