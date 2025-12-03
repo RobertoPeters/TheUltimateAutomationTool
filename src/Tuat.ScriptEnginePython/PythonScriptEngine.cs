@@ -116,11 +116,11 @@ public class PythonScriptEngine : IScriptEngine
         {
             if (functionParameters?.Any() != true)
             {
-                using (_pythonFunc[functionName].Invoke()) ;
+                using (_pythonFunc[functionName].Invoke()) { }
             }
             else
             {
-                using (_pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray())) ;
+                using (_pythonFunc[functionName].Invoke(functionParameters.Select(x => x.Value == null ? PyObject.None : PyObject.FromManagedObject(x.Value)).ToArray())) { }
             }
         }
     }
@@ -130,7 +130,7 @@ public class PythonScriptEngine : IScriptEngine
         if (!PythonInitialzed) throw new NotSupportedException(PythonNotSupportedMessage);
         using (Py.GIL())
         {
-            T result = default;
+            T result;
             if (functionParameters?.Any() != true)
             {
                 using (var pyresult = _pythonFunc[functionName].Invoke())

@@ -80,7 +80,7 @@ public class StepFinishFlow : Step
 
     public List<SubFlowParameter>? SubFlowParameters
     {
-        get => string.IsNullOrWhiteSpace(this[SubFlowParametersKey]?.ToString()) ? [] : System.Text.Json.JsonSerializer.Deserialize<List<SubFlowParameter>>(this[SubFlowParametersKey].ToString()!);
+        get => string.IsNullOrWhiteSpace(this[SubFlowParametersKey]?.ToString()) ? [] : System.Text.Json.JsonSerializer.Deserialize<List<SubFlowParameter>>(this[SubFlowParametersKey]!.ToString()!);
         set => this[SubFlowParametersKey] = value;
     }
 }

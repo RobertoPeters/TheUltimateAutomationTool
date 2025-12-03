@@ -91,7 +91,7 @@ public class JavaScriptEngine : IScriptEngine
     {
         var func = _engine!.GetValue(functionName);
         var jsResult = _engine.Invoke(func, functionParameters?.Select(p => JsValue.FromObject(_engine, p.Value)).ToArray() ?? []);
-        return (T?)jsResult.ToObject();
+        return (T?)jsResult.ToObject()!;
     }
 
     public void Execute(string script)

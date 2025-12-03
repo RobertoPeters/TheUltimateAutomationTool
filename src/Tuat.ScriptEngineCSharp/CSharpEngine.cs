@@ -99,7 +99,7 @@ public class CSharpEngine : IScriptEngine
             var func = (Func< List<object?>?, T >)scriptMethod;
             return func((List<object?>?)functionParameters![0].Value);
         }
-        return default;
+        return default!;
     }
 
     public void Execute(string script)
@@ -143,7 +143,7 @@ public class CSharpEngine : IScriptEngine
             var genericTypeName = type.GetGenericTypeDefinition().FullName;
             var genericArguments = type.GetGenericArguments();
             var genericArgsNames = string.Join(", ", genericArguments.Select(t => GetTypeFullName(t)));
-            return $"{genericTypeName.Substring(0, genericTypeName.IndexOf('`'))}<{genericArgsNames}>";
+            return $"{genericTypeName!.Substring(0, genericTypeName.IndexOf('`'))}<{genericArgsNames}>";
         }
         return type.FullName!;
     }
