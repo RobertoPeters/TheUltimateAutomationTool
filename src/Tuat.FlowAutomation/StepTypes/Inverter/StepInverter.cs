@@ -2,11 +2,11 @@
 using Tuat.Interfaces;
 using Tuat.Models;
 
-namespace Tuat.FlowAutomation.StepTypes.And;
+namespace Tuat.FlowAutomation.StepTypes.Inverter;
 
-[DisplayName("And")]
-[Editor("Tuat.FlowAutomation.StepTypes.And.StepSettings", typeof(StepSettings))]
-public class StepAnd: Step
+[DisplayName("Inverter")]
+[Editor("Tuat.FlowAutomation.StepTypes.Inverter.StepSettings", typeof(StepSettings))]
+public class StepInverter: Step
 {
     public override List<Blazor.Diagrams.Core.Models.PortAlignment> OutputPorts { get; set; } = [Blazor.Diagrams.Core.Models.PortAlignment.Right];
 
@@ -30,10 +30,10 @@ public class StepAnd: Step
         }
         else
         {
-            result = payloads!.Any(x => x.IsTrue() != true);
+            result = payloads!.Any(x => x.IsTrue() == true);
         }
 
-        if (Payloads[0].UpdateData(result == true ? null : true))
+        if (Payloads[0].UpdateData(result == false ? true : null))
         {
             return Task.FromResult<List<Blazor.Diagrams.Core.Models.PortAlignment>>([Blazor.Diagrams.Core.Models.PortAlignment.Right]);
         }

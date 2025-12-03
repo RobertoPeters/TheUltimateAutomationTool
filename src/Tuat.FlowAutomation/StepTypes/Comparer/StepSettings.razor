@@ -1,0 +1,33 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject Tuat.Interfaces.IDataService DataService
+
+<RadzenFormField Text="Comparer *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenDropDown Data="@CompareOperator.Operators" @bind-Value="@Model!.ComparerId" Name="ComparerId" TextProperty="@nameof(CompareOperator.DisplaySymbol)" ValueProperty="@nameof(CompareOperator.Id)" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="ComparerId" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="ReferenceValue" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.ReferenceValue" Name="ReferenceValue" spellcheck="false" />
+</RadzenFormField>
+
+
+@code {
+	[Parameter]
+	public StepComparer Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	[Parameter]
+	public Automation? Automation { get; set; }
+
+}

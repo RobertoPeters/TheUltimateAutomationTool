@@ -19,17 +19,21 @@ public class StepOr: Step
 
     public override Task<List<Blazor.Diagrams.Core.Models.PortAlignment>> ProcessAsync(FlowHandler instance, Dictionary<Blazor.Diagrams.Core.Models.PortAlignment, List<Payload>> inputPayloads, IScriptEngine scriptEngine, Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
     {
+        bool? result = null;
         if (!inputPayloads.TryGetValue(Blazor.Diagrams.Core.Models.PortAlignment.Left, out var payloads))
         {
-            Payloads[0].Data = null;
+            result = null;
         }
-        if (payloads?.Any() != true)
+        else if (payloads?.Any() != true)
         {
-            Payloads[0].Data = null;
+            result = null;
         }
-        var result = payloads!.Any(x => x.IsTrue() == true);
+        else
+        {
+            result = payloads!.Any(x => x.IsTrue() == true);
+        }
 
-        if (Payloads[0].UpdateData(result ? true : null))
+        if (Payloads[0].UpdateData(result == true ? true : null))
         {
             return Task.FromResult<List<Blazor.Diagrams.Core.Models.PortAlignment>>([Blazor.Diagrams.Core.Models.PortAlignment.Right]);
         }

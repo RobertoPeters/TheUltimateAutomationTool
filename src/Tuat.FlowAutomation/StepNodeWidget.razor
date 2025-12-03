@@ -25,13 +25,9 @@
     string GetPayloadText(Blazor.Diagrams.Core.Models.PortAlignment port)
     {
         var payload = Node.Step.Payloads.FirstOrDefault(p => p.Port == port);
-        if (payload == null)
+        if (payload?.Data == null)
         {
             return "";
-        }
-        else if (payload.Data == null)
-        {
-            return "null";
         }
         else if (payload.Data is string text)
         {

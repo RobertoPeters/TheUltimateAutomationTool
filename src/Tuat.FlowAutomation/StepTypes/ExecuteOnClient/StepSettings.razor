@@ -1,0 +1,79 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject IClientService ClientService
+@inject Tuat.Interfaces.IDataService DataService
+
+
+<RadzenFormField Text="Client *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenDropDown Data="_clients" @bind-Value="@Model!.ClientName" Name="ClientName" ValueProperty="@nameof(Client.Name)" TextProperty="@nameof(Client.Name)" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="ClientName" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Command *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenDropDown Data="@(_clientCommands[Model!.ClientName ?? ""])" @bind-Value="@Model!.Command" Name="Command" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Command" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Variable name" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.VariableName" Name="VariableName" spellcheck="false" />
+</RadzenFormField>
+@if (!string.IsNullOrWhiteSpace(Model?.VariableName))
+{
+	<RadzenFormField Text="Is global variabe" Variant="@Variant.Outlined">
+		<RadzenRadioButtonList @bind-Value="@Model!.IsGlobalVariable" TValue="bool" class="rz-m-4 rz-mt-8">
+			<Items>
+				<RadzenRadioButtonListItem Text="Yes" Value="true" />
+				<RadzenRadioButtonListItem Text="No" Value="false" />
+			</Items>
+		</RadzenRadioButtonList>
+	</RadzenFormField>
+}
+<RadzenFormField Text="Parameter 1" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.Parameter1" Name="Parameter1" spellcheck="false" />
+</RadzenFormField>
+<RadzenFormField Text="Parameter 2" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.Parameter2" Name="Parameter2" spellcheck="false" />
+</RadzenFormField>
+<RadzenFormField Text="Parameter 3" Variant="@Variant.Outlined">
+	<RadzenTextBox @bind-Value="@Model!.Parameter3" Name="Parameter3" spellcheck="false" />
+</RadzenFormField>
+
+
+@code {
+	[Parameter]
+	public StepExecuteOnClient Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	[Parameter]
+	public Automation? Automation { get; set; }
+
+	List<Client> _clients = null!;
+	Dictionary<string, List<string>> _clientCommands = [];
+
+	protected override void OnInitialized()
+	{
+		_clients = DataService.GetClients();
+		_clientCommands.Add("", []);
+
+		var clients = ClientService.GetClients();
+		foreach (var client in clients)
+		{
+			var createExecuteMethods = client.CreateExecuteOnClientMethods();
+			_clientCommands.Add(client.Client.Name, createExecuteMethods.Select(x => x.command).ToList());
+		}
+	}
+
+}
