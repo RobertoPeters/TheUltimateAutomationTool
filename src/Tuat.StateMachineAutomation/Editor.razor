@@ -195,6 +195,7 @@
 
     async Task SaveAsync()
     {
+        AddUIDataToStatesAndTransitions();
         await OnSave.InvokeAsync();
     }
 
@@ -908,8 +909,8 @@
 		_diagram.Nodes.Clear();
 		foreach (var state in _automationProperties.States)
 		{
-			var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(state.UIData!);
-			var node = _diagram.Nodes.Add(new StateMachineStateNodeModel(state, Automation, ScriptEditorType, _scriptEngine, position: new Blazor.Diagrams.Core.Geometry.Point(uiData!.X, uiData.Y))
+            var uiData = state.UIData == null ? new() { X = 50, Y = 50 } : System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(state.UIData!);
+            var node = _diagram.Nodes.Add(new StateMachineStateNodeModel(state, Automation, ScriptEditorType, _scriptEngine, position: new Blazor.Diagrams.Core.Geometry.Point(uiData!.X, uiData.Y))
 			{
 				Title = state.Name
 			});
