@@ -2,6 +2,7 @@
 An automation tool for Home Automation controllers (Home Assistant, Homey etc.). It supports different kind of scripting methods like state machines and flows and different kind of scripting languages.
 
 This application simplifies automations by providing different kind of automation methods and different kind of scripting languages. Automations can call other automations (sub automations).
+Documentation on this application (installation and usage) can be found in the wiki (https://github.com/RobertoPeters/TheUltimateAutomationTool/wiki)
 
 ## Supported scripting languages
 - JavaScript
