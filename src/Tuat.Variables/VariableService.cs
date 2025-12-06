@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Threading;
 using Tuat.Extensions;
 using Tuat.Interfaces;
 using Tuat.Models;
@@ -8,6 +9,7 @@ namespace Tuat.Variables;
 public class VariableService(IDataService _dataService, IMessageBusService _messageBusService): Tuat.Interfaces.IVariableService
 {
     private readonly ConcurrentDictionary<int, VariableInfo> _variables = [];
+    private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
     public Task StartAsync()
     {
@@ -100,43 +102,52 @@ public class VariableService(IDataService _dataService, IMessageBusService _mess
         {
             return null;
         }
-        var variableInfo = _variables.Values.FirstOrDefault(x => x.Variable.Name == name
-        && x.Variable.AutomationId == automationId
-        && clientId == x.Variable.ClientId
-        );
+        await _semaphoreSlim.WaitAsync();
 
-        if (variableInfo != null
-            && string.Compare(data, variableInfo.Variable.Data) == 0
-            && persistant == variableInfo.Variable.Persistant
-            && variableInfo.Variable.MockingValues.ContainsSameElements(mockingOptions))
+        try
         {
-            return variableInfo.Variable.Id;
-        }
+            var variableInfo = _variables.Values.FirstOrDefault(x => x.Variable.Name == name
+            && x.Variable.AutomationId == automationId
+            && clientId == x.Variable.ClientId
+            );
 
-        var variable = variableInfo?.Variable;
-        var variableValue = variableInfo?.VariableValue;
-
-        if (variable == null)
-        {
-            variable = new()
+            if (variableInfo != null
+                && string.Compare(data, variableInfo.Variable.Data) == 0
+                && persistant == variableInfo.Variable.Persistant
+                && variableInfo.Variable.MockingValues.ContainsSameElements(mockingOptions))
             {
-                ClientId = clientId,
-                Name = name,
-                AutomationId = automationId,
-                Persistant = persistant
-            };
-        }
-        if (variableValue != null)
-        {
-            await _dataService.DeleteVariableValueAsync(variableValue);
-        }
+                return variableInfo.Variable.Id;
+            }
 
-        variable.PreviousData = variable.Data;
-        variable.Data = data;
-        variable.MockingValues = mockingOptions;
-        await _dataService.AddOrUpdateVariableAsync(variable);
-        await AddOrUpdateVariableAsync(variable);
-        return variable.Id;
+            var variable = variableInfo?.Variable;
+            var variableValue = variableInfo?.VariableValue;
+
+            if (variable == null)
+            {
+                variable = new()
+                {
+                    ClientId = clientId,
+                    Name = name,
+                    AutomationId = automationId,
+                    Persistant = persistant
+                };
+            }
+            if (variableValue != null)
+            {
+                await _dataService.DeleteVariableValueAsync(variableValue);
+            }
+
+            variable.PreviousData = variable.Data;
+            variable.Data = data;
+            variable.MockingValues = mockingOptions;
+            await _dataService.AddOrUpdateVariableAsync(variable);
+            await AddOrUpdateVariableAsync(variable);
+            return variable.Id;
+        }
+        finally
+        {
+            _semaphoreSlim.Release();
+        }
     }
 
     public async Task Handle(Client client)
