@@ -1,0 +1,38 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject Tuat.Interfaces.IDataService DataService
+
+
+<RadzenFormField Text="Value *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@Model!.ConstantValue" Name="ConstantValue" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="ConstantValue" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Payload on start" Variant="@Variant.Outlined">
+	<RadzenRadioButtonList @bind-Value="@Model!.PayloadOnStart" TValue="bool" class="rz-m-4 rz-mt-8">
+		<Items>
+			<RadzenRadioButtonListItem Text="Yes" Value="true" />
+			<RadzenRadioButtonListItem Text="No" Value="false" />
+		</Items>
+	</RadzenRadioButtonList>
+</RadzenFormField>
+
+
+@code {
+	[Parameter]
+	public StepConstant Model { get; set; } = null!;
+
+	[Parameter]
+	public Type? ScriptEditorType { get; set; }
+
+	[Parameter]
+	public IScriptEngine? ScriptEngine { get; set; }
+
+	[Parameter]
+	public Automation? Automation { get; set; }
+}
