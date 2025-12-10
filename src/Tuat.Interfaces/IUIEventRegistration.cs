@@ -12,6 +12,7 @@ public interface IUIEventRegistration
     event EventHandler<LogEntry>? LogEntryAdded;
     event EventHandler<AutomationStateInfo>? AutomationStateInfoChanged;
     event EventHandler<AutomationTriggered>? AutomationTriggered;
+    event EventHandler<Library>? LibraryChanged;
 
     void Handle(ClientHandlerInfo clientHandler);
     void Handle(AutomationHandlerInfo automationHandler);
@@ -21,4 +22,5 @@ public interface IUIEventRegistration
     void Handle(LogEntry logEntry);
     void Handle(AutomationStateInfo automationStateInfo);
     void Handle(AutomationTriggered automationTriggered);
+    void Handle(Library library);
 }

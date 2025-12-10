@@ -1,0 +1,147 @@
+﻿@page "/libraries"
+@using System.Collections.Concurrent
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject Radzen.DialogService DialogService
+@inject IUIEventRegistration UIEventRegistration
+@inject IDataService DataService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>TUAT - Libraries</PageTitle>
+
+<h1>Libraries</h1>
+
+@if (libraries != null)
+{
+	<RadzenButton Text="Add" Click="@AddLibraryAsync" />
+	<RadzenDataGrid @ref="grid" AllowFiltering="true"
+					AllowColumnResize="true"
+					AllowAlternatingRows="false"
+					FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+					FilterMode="FilterMode.SimpleWithMenu"
+					AllowSorting="true"
+					PageSize="20"
+					Density="Density.Compact"
+					RowClick="@OnRowClick"
+					AllowPaging="true"
+					AllowVirtualization="true"
+					PagerHorizontalAlign="HorizontalAlign.Left"
+					ShowPagingSummary="true"
+					Data="@libraries"
+					TItem="Library">
+		<Columns>
+			<RadzenDataGridColumn TItem="Library"
+								  Property="@nameof(Library.Id)"
+								  Filterable="false"
+								  Sortable="false"
+								  Resizable="false"
+								  Width="96px"
+								  Title="">
+				<Template Context="library">
+					<div @onclick:stopPropagation="true">
+						<RadzenIcon style="cursor:pointer;"
+									Icon="edit"
+									@onclick="@(() => NavigationManager.NavigateTo($"/editlibrary/{library.Id}"))" />
+						<RadzenIcon style="cursor:pointer;"
+									Icon="open_in_new"
+									@onclick="@(() => JSRuntime.InvokeVoidAsync("navigateToTarget", $"/editlibrary/{library.Id}", "_blank"))" />
+					</div>
+				</Template>
+			</RadzenDataGridColumn>
+
+			<RadzenDataGridColumn TItem="Library"
+								  Property="@nameof(Library.Id)"
+								  Title="Id" />
+
+			<RadzenDataGridColumn TItem="Library"
+								  Property="@nameof(Library.Name)"
+								  Title="Name" />
+
+			<RadzenDataGridColumn TItem="Library"
+								  Property="@nameof(Library.ScriptType)"
+								  Filterable="false"
+								  Title="Type">
+				<Template Context="library">
+					@(Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.TypeName == library.ScriptType)?.DisplayName)
+				</Template>
+			</RadzenDataGridColumn>
+
+
+			<RadzenDataGridColumn TItem="Library"
+								  Filterable="false"
+								  Sortable="false"
+								  Property="@nameof(Library.Id)"
+								  Title="">
+				<Template Context="library">
+					<div @onclick:stopPropagation="true">
+						<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteLibraryAsync(library))" />
+					</div>
+				</Template>
+			</RadzenDataGridColumn>
+		</Columns>
+	</RadzenDataGrid>
+}
+
+@code {
+
+	List<Library>? libraries = null;
+	RadzenDataGrid<Library>? grid = null;
+
+	protected override void OnInitialized()
+	{
+		libraries = DataService.GetLibraries();
+		UIEventRegistration.LibraryChanged += LibraryChanged;
+		base.OnInitialized();
+	}
+
+	public void Dispose()
+	{
+		UIEventRegistration.LibraryChanged -= LibraryChanged;
+	}
+
+	private void LibraryChanged(object? sender, Library library)
+	{
+		if (library.Id < 0)
+		{
+			libraries!.RemoveAll(x => x.Id == -library.Id);
+		}
+		else
+		{
+			var index = libraries!.FindIndex(x => x.Id == library.Id);
+			if (index >= 0)
+			{
+				libraries[index] = library;
+			}
+			else
+			{
+				libraries.Add(library);
+			}
+		}
+		InvokeAsync(grid!.Reload);
+		InvokeAsync(StateHasChanged);
+	}
+
+	void OnRowClick(DataGridRowMouseEventArgs<Library> item)
+	{
+		NavigationManager.NavigateTo($"/editlibrary/{item.Data.Id}");
+	}
+
+	async Task DeleteLibraryAsync(Library mi)
+	{
+		if (await DialogService.ShowNoYesConfirmationDialogAsync("Delete Library", $"Are you sure you want to delete the library '{mi.Name}'?") == Dialogs.ConfirmationDialog.DialogButton.Yes)
+		{
+			await DataService.DeleteLibraryAsync(mi);
+		}
+	}
+
+	async Task AddLibraryAsync()
+	{
+		var sm = await DialogService.ShowDialogAsync<AddOrEditLibraryDialog, Library>("Add Library", dialog => { });
+		if (sm != null)
+		{
+			await DataService.AddOrUpdateLibraryAsync(sm);
+		}
+	}
+}

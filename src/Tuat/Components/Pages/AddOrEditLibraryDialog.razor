@@ -1,0 +1,74 @@
+﻿@using Tuat.Dialogs
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject IDataService DataService
+
+@inherits ResultDialogBase<Library>
+
+<RadzenTemplateForm @ref="Form" Data="@Model" TItem="Library">
+    <RadzenStack>
+        <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
+            <ChildContent>
+                <RadzenTextBox @bind-Value="@Model.Name" Name="Name" spellcheck="false" />
+            </ChildContent>
+            <Helper>
+                <RadzenRequiredValidator Component="Name" Text="This field is required" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Script language *" Variant="@Variant.Outlined">
+            <ChildContent>
+                <RadzenDropDown Change="@UpdateLibraries" Data="Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model.ScriptType" Name="ScriptType" Disabled=@(Model.Id != 0) />
+            </ChildContent>
+            <Helper>
+                <RadzenRequiredValidator Component="ScriptType" Text="This field is required" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Include library" Variant="@Variant.Outlined">
+            <RadzenDropDown Multiple="true" Data="libraries" ValueProperty="Id" TextProperty="Name" @bind-Value="@Model.IncludeScriptIds" Name="IncludeScriptIds" />
+        </RadzenFormField>
+    </RadzenStack>
+    <RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+</RadzenTemplateForm>
+
+
+@code {
+    protected override bool ShowClose => true;
+    protected override bool IsPersistent => false;
+    protected override bool CloseDialogOnOverlayClick => true;
+    protected override int? WidthInPixels => 1400;
+
+    [Parameter]
+    public Library? Library { get; set; }
+
+    private Library Model = new();
+    private RadzenTemplateForm<Library>? Form;
+    private List<Library> libraries = null!;
+
+    protected override void OnInitialized()
+    {
+        if (Library == null)
+        {
+            Library = new();
+        }
+        Model = Library.CopyObject()!;
+        Model.Id = Library.Id;
+        libraries = DataService.GetLibraries().Where(x => x.ScriptType == Model.ScriptType).ToList();
+        base.OnInitialized();
+    }
+
+    void UpdateLibraries()
+    {
+        libraries = DataService.GetLibraries().Where(x => x.ScriptType == Model.ScriptType && x.Id != Model.Id).ToList();
+    }
+
+    void OnSubmit()
+    {
+        Form!.EditContext.Validate();
+        if (Form.IsValid)
+        {
+            Close(Model!);
+        }
+    }
+
+}

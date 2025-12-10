@@ -221,6 +221,15 @@ public class LuaEngine : IScriptEngine
                 script.AppendLine($"{p.ScriptVariableName} = {p.DefaultValue}");
             }
         });
+
+        if (!string.IsNullOrWhiteSpace(additionalScript))
+        {
+            script.AppendLine();
+            script.AppendLine(additionalScript);
+            script.AppendLine();
+
+        }
+
         return script.ToString();
     }
 }

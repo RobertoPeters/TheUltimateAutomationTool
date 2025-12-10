@@ -9,6 +9,7 @@ public interface IDataService
     List<Variable> GetVariables();
     List<VariableValue> GetVariableValues();
     List<Automation> GetAutomations();
+    List<Library> GetLibraries();
     Task AddOrUpdateClientAsync(Client client);
     Task AddOrUpdateVariableAsync(Variable variable);
     Task AddOrUpdateVariableValueAsync(VariableValue variableValue);
@@ -17,4 +18,6 @@ public interface IDataService
     Task DeleteClientAsync(Client client);
     Task AddOrUpdateAutomationAsync(Automation automation);
     Task DeleteAutomationAsync(Automation automation);
+    Task AddOrUpdateLibraryAsync(Library library);
+    Task DeleteLibraryAsync(Library library);
 }

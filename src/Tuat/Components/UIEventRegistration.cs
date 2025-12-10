@@ -13,6 +13,7 @@ public class UIEventRegistration: IUIEventRegistration
     public event EventHandler<LogEntry>? LogEntryAdded;
     public event EventHandler<AutomationStateInfo>? AutomationStateInfoChanged;
     public event EventHandler<AutomationTriggered>? AutomationTriggered;
+    public event EventHandler<Library>? LibraryChanged;
 
     public void Handle(ClientHandlerInfo clientHandler)
     {
@@ -53,5 +54,10 @@ public class UIEventRegistration: IUIEventRegistration
     public void Handle(AutomationTriggered automationTriggered)
     {
         AutomationTriggered?.Invoke(this, automationTriggered);
+    }
+
+    public void Handle(Library library)
+    { 
+        LibraryChanged?.Invoke(this, library);
     }
 }

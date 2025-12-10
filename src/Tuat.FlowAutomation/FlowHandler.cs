@@ -35,6 +35,13 @@ public class FlowHandler : BaseAutomationHandler<AutomationProperties>, IAutomat
 
         var additionalScript = new StringBuilder();
 
+        if (Automation.IncludeScriptId != null)
+        {
+            additionalScript.AppendLine();
+            additionalScript.AppendLine(Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(_dataService, Automation.IncludeScriptId, null));
+            additionalScript.AppendLine();
+        }
+
         additionalScript.AppendLine(_automationProperties.PreStartAction);
 
         foreach (var step in _automationProperties.Steps)

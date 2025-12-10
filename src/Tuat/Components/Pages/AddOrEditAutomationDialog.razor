@@ -26,11 +26,14 @@
         </RadzenFormField>
         <RadzenFormField Text="Script language *" Variant="@Variant.Outlined">
             <ChildContent>
-                <RadzenDropDown Data="Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model.ScriptType" Name="ScriptType" Disabled=@(Model.Id != 0) />
+                <RadzenDropDown Change="@UpdateLibraries" Data="Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames" ValueProperty="TypeName" TextProperty="DisplayName" @bind-Value="@Model.ScriptType" Name="ScriptType" Disabled=@(Model.Id != 0) />
             </ChildContent>
             <Helper>
                 <RadzenRequiredValidator Component="ScriptType" Text="This field is required" />
             </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Include library" Variant="@Variant.Outlined">
+             <RadzenDropDown Data="libraries" AllowClear="true" ValueProperty="Id" TextProperty="Name" @bind-Value="@Model.IncludeScriptId" Name="IncludeScriptId" />
         </RadzenFormField>
         <RadzenFormField Text="Sub Automation" Variant="@Variant.Outlined">
             <RadzenRadioButtonList @bind-Value="@Model.IsSubAutomation" TValue="bool" class="rz-m-4 rz-mt-8">
@@ -147,6 +150,7 @@
     private RadzenDataGrid<SubAutomationParameter>? parametersGrid;
     private readonly List<SubAutomationParameter> parametersToInsert = [];
     private readonly List<SubAutomationParameter> parametersToUpdate = [];
+    private List<Library> libraries = null!;
 
     protected override void OnInitialized()
     {
@@ -157,9 +161,19 @@
         }
         Model = Automation.CopyObject()!;
         Model.Id = Automation.Id;
+        libraries = DataService.GetLibraries().Where(x => x.ScriptType == Model.ScriptType).ToList();
         SettingsPropertiesParameters = new Dictionary<string, object?>() { { "Model", Model } };
         base.OnInitialized();
     }
+
+    void UpdateLibraries()
+    {
+        libraries = DataService.GetLibraries().Where(x => x.ScriptType == Model.ScriptType).ToList();
+        if (!libraries.Any(x => x.Id == Model.IncludeScriptId))
+        {
+            Model.IncludeScriptId = null;
+        }
+	}
 
     Type? SettingsComponentType()
     {

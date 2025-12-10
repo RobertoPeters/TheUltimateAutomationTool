@@ -1,0 +1,97 @@
+﻿@page "/editlibrary/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+@using Tuat.Data
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject IDataService DataService
+@inject IClientService ClientService
+@inject DialogService DialogService
+@inject IUIEventRegistration UIEventRegistration
+
+@implements IDisposable
+
+<PageTitle>TUAT - Edit Library</PageTitle>
+
+<span>Edit Library: @Library.Name</span>
+
+@if (ScriptEditorType != null)
+{
+	<div>
+		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Properties" Click="@EditLibraryAsync" />
+		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" Click="@SaveAsync" />
+	</div>
+	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
+		<RadzenSplitterPane Min="10px">
+			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
+		</RadzenSplitterPane>
+		<RadzenSplitterPane Size="300px" Min="10px">
+			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
+		</RadzenSplitterPane>
+	</RadzenSplitter>
+}
+
+@code {
+	[Parameter]
+	public int Id { get; set; }
+
+	Library Library = null!;
+	Type? ScriptEditorType = null;
+	Dictionary<string, object?>? EditorPropertiesParameters;
+	Dictionary<string, object?>? SystemScriptParameters;
+	DynamicComponent? scriptEditor;
+
+	protected override async Task OnInitializedAsync()
+	{
+		Library = DataService.GetLibraries().First(x => x.Id == Id);
+		UIEventRegistration.LibraryChanged += LibraryChanged;
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Library.Script ?? "" }, { "Height", "85vh" } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript() }, { "Height", "85vh" }, { "ReadOnly", true } };
+		ScriptEditorType = Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.TypeName == Library.ScriptType)?.EditorComponentType;
+		await base.OnInitializedAsync();
+	}
+
+	public void Dispose()
+	{
+		UIEventRegistration.LibraryChanged -= LibraryChanged;
+	}
+
+	string GetSystemScript()
+	{
+		using (var scriptEngine = GetScriptEngine())
+		{
+			var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, null, Library.IncludeScriptIds);
+			return scriptEngine.GetSystemScript(ClientService, additionalScript: additionalScript);
+		}
+	}
+
+	IScriptEngine GetScriptEngine()
+	{
+		var type = Tuat.Helpers.Generics.Generic.ComponentType(Library.ScriptType)!;
+		return (IScriptEngine?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, null)!;
+	}
+
+	async void LibraryChanged(object? sender, Library library)
+	{
+		if (library.Id != Id)
+		{
+			return;
+		}
+		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(Library.Script);
+	}
+
+	async Task EditLibraryAsync()
+	{
+		var sm = await DialogService.ShowDialogAsync<AddOrEditLibraryDialog, Library>("Add Library", dialog => { dialog.Library = Library; });
+		if (sm != null)
+		{
+			await DataService.AddOrUpdateLibraryAsync(sm);
+		}
+	}
+
+	async Task SaveAsync()
+	{
+		Library.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		await DataService.AddOrUpdateLibraryAsync(Library);
+	}
+}

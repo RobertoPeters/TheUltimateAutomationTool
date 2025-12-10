@@ -2,6 +2,7 @@
 @using Radzen.Blazor
 @using Tuat.Interfaces
 @using Tuat.Models
+@inject IDataService DataService
 @inject Tuat.Interfaces.IClientService ClientService
 @implements IAutomationEditor
 
@@ -15,7 +16,7 @@
 			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
 		</RadzenSplitterPane>
 		<RadzenSplitterPane Size="300px" Min="10px">
-			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
+			<DynamicComponent @ref="systemScriptEditor" Type="ScriptEditorType" Parameters="SystemScriptParameters" />
 		</RadzenSplitterPane>
 	</RadzenSplitter>
 }
@@ -42,6 +43,7 @@
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
+	DynamicComponent? systemScriptEditor;
 	AutomationProperties automationProperties = null!;
 
 	protected override async Task OnInitializedAsync()
@@ -53,8 +55,18 @@
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
 		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", Height ?? "85vh" } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", scriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript(scriptEngine) ?? "" }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
 		await base.OnInitializedAsync();
+	}
+
+	string GetSystemScript(IScriptEngine? scriptEngine)
+	{
+		if (Automation?.IncludeScriptId == null)
+		{
+			return "";
+		}
+		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation.IncludeScriptId, null);
+		return scriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "";
 	}
 
 	public async Task ReloadAutomationAsync(Automation automation)
@@ -67,6 +79,7 @@
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
 		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(automationProperties.Script);
+		await ((IScriptEditor)systemScriptEditor!.Instance!).SetScriptAsync(GetSystemScript(scriptEngine));
 	}
 
 	async Task EditSettingsAsync()

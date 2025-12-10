@@ -13,6 +13,7 @@ public class DataRepository(IConfiguration _configuration) : IRepository
     const string VariableTableName = "Variable";
     const string VariableValueTableName = "VariableValue";
     const string AutomationTableName = "Automation";
+    const string LibraryTableName = "Library";
 
     public async Task SetupAsync()
     {
@@ -26,6 +27,7 @@ public class DataRepository(IConfiguration _configuration) : IRepository
 CREATE TABLE IF NOT EXISTS {VariableTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {AutomationTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
+CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 ";
         await command.ExecuteNonQueryAsync();
         await command.DisposeAsync();
@@ -44,6 +46,11 @@ CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOI
     public async Task<List<Automation>> GetAutomationsAsync()
     {
         return await GetItemsAsync<Automation>(AutomationTableName);
+    }
+
+    public async Task<List<Library>> GetLibrariesAsync()
+    {
+        return await GetItemsAsync<Library>(LibraryTableName);
     }
 
     public async Task<List<VariableValue>> GetVariableValuesAsync()
@@ -66,6 +73,11 @@ CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOI
         await AddItemAsync(AutomationTableName, automation);
     }
 
+    public async Task AddLibraryAsync(Library library)
+    {
+        await AddItemAsync(LibraryTableName, library);
+    }
+
     public async Task AddVariableValueAsync(VariableValue variableValue)
     {
         await AddItemAsync(VariableValueTableName, variableValue);
@@ -86,6 +98,11 @@ CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOI
         await UpdateItemAsync(AutomationTableName, automation);
     }
 
+    public async Task UpdateLibraryAsync(Library library)
+    {
+        await UpdateItemAsync(LibraryTableName, library);
+    }
+
     public async Task UpdateVariableValueAsync(VariableValue variableValue)
     {
         await UpdateItemAsync(VariableValueTableName, variableValue);
@@ -104,6 +121,11 @@ CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOI
     public async Task DeleteAutomationAsync(Automation automation)
     {
         await DeleteItemAsync(AutomationTableName, automation);
+    }
+
+    public async Task DeleteLibraryAsync(Library library)
+    {
+        await DeleteItemAsync(LibraryTableName, library);
     }
 
     public async Task DeleteVariableValueAsync(VariableValue variableValue)

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text;
 using Tuat.AutomationHelper;
 using Tuat.Interfaces;
 using Tuat.Models;
@@ -28,6 +29,16 @@ public class FreeScriptHandler : BaseAutomationHandler<AutomationProperties>, IA
             _automationProperties.Script = scheduleFunctionDeclaration;
         }
 
-        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, _automationProperties.Script, InputValues, topAutomationId);
+        var additionalScript = new StringBuilder();
+
+        if (Automation.IncludeScriptId != null)
+        {
+            additionalScript.AppendLine();
+            additionalScript.AppendLine(Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(_dataService, Automation.IncludeScriptId, null));
+            additionalScript.AppendLine();
+        }
+        additionalScript.AppendLine(_automationProperties.Script);
+
+        scriptEngine.Initialize(_clientService, _dataService, _variableService, this, instanceId, additionalScript.ToString(), InputValues, topAutomationId);
     }
 }

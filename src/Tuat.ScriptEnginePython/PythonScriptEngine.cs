@@ -305,6 +305,14 @@ public class PythonScriptEngine : IScriptEngine
             }
         });
 
+        if (!string.IsNullOrWhiteSpace(additionalScript))
+        {
+            script.AppendLine();
+            script.AppendLine(additionalScript);
+            script.AppendLine();
+
+        }
+
         return script.ToString();
     }
 

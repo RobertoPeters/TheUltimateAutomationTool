@@ -10,6 +10,7 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
     private readonly ConcurrentDictionary<int, Variable> _variables = [];
     private readonly ConcurrentDictionary<int, VariableValue> _variableValues = [];
     private readonly ConcurrentDictionary<int, Automation> _automations = [];
+    private readonly ConcurrentDictionary<int, Library> _libraries = [];
 
     private int _lastUsedNonPersistentVariableValueId = int.MaxValue;
 
@@ -47,6 +48,12 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
         {
             _automations.TryAdd(automation.Id, automation);
         }
+
+        var libraries = await _dataRepository.GetLibrariesAsync();
+        foreach (var library in libraries)
+        {
+            _libraries.TryAdd(library.Id, library);
+        }
     }
 
     public List<Client> GetClients()
@@ -67,6 +74,11 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
     public List<Automation> GetAutomations()
     {
         return _automations.Values.ToList();
+    }
+
+    public List<Library> GetLibraries()
+    {
+        return _libraries.Values.ToList();
     }
 
     public async Task AddOrUpdateClientAsync(Client client)
@@ -190,6 +202,20 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
         await _messageBusService.PublishAsync(automation);
     }
 
+    public async Task AddOrUpdateLibraryAsync(Library library)
+    {
+        if (library.Id == 0)
+        {
+            await _dataRepository.AddLibraryAsync(library);
+        }
+        else
+        {
+            await _dataRepository.UpdateLibraryAsync(library);
+        }
+        _libraries.AddOrUpdate(library.Id, library, (_, _) => library);
+        await _messageBusService.PublishAsync(library);
+    }
+
     public async Task DeleteAutomationAsync(Automation automation)
     {
         if (_automations.TryRemove(Math.Abs(automation.Id), out var orgAutomation))
@@ -215,6 +241,16 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
             }
             orgAutomation.Id = -Math.Abs(orgAutomation.Id);
             await _messageBusService.PublishAsync(orgAutomation);
+        }
+    }
+
+    public async Task DeleteLibraryAsync(Library library)
+    {
+        if (_libraries.TryRemove(Math.Abs(library.Id), out var orgLibrary))
+        {
+            await _dataRepository.DeleteLibraryAsync(library);
+            orgLibrary.Id = -Math.Abs(orgLibrary.Id);
+            await _messageBusService.PublishAsync(orgLibrary);
         }
     }
 

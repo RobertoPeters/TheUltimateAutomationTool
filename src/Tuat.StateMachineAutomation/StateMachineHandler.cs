@@ -60,11 +60,17 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
     {
         CurrentState = null;
         _scheduledTimes.Clear();
-        var startState = GetStartState();
 
         var script = new StringBuilder();
 
-        foreach(var state in _automationProperties.States)
+        if (Automation.IncludeScriptId != null)
+        {
+            script.AppendLine();
+            script.AppendLine(Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(_dataService, Automation.IncludeScriptId, null));
+            script.AppendLine();
+        }
+
+        foreach (var state in _automationProperties.States)
         {
             script.AppendLine(scriptEngine.GetDeclareFunction(GetScriptActionMethodName(state), body: state.EntryAction));
         }

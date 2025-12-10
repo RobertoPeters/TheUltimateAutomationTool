@@ -1,6 +1,8 @@
 ﻿@using Radzen.Blazor
 @using Tuat.Dialogs
 @using Tuat.Interfaces
+@using Tuat.Models
+@inject IDataService DataService
 @inject Tuat.Interfaces.IClientService ClientService
 
 @if (ScriptEditorType != null)
@@ -28,6 +30,10 @@
 	[Parameter]
 	public IScriptEngine? ScriptEngine { get; set; }
 
+	[Parameter]
+	public Automation? Automation { get; set; }
+
+
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
@@ -35,12 +41,22 @@
 	protected override async Task OnInitializedAsync()
 	{
 		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Script }, { "Height", Height } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", ScriptEngine?.GetSystemScript(ClientService) ?? "" }, { "Height", Height }, { "ReadOnly", true } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript() }, { "Height", Height }, { "ReadOnly", true } };
 		await base.OnInitializedAsync();
 	}
 
 	public async Task<string?> GetScriptAsync()
 	{
 		return await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync();
+	}
+
+	string GetSystemScript()
+	{
+		if (Automation?.IncludeScriptId == null)
+		{
+			return "";
+		}
+		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation.IncludeScriptId, null);
+		return ScriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "";
 	}
 }

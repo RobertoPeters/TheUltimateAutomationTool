@@ -204,6 +204,14 @@ public class JavaScriptEngine : IScriptEngine
             }
         });
 
+        if (!string.IsNullOrWhiteSpace(additionalScript))
+        {
+            script.AppendLine();
+            script.AppendLine(additionalScript);
+            script.AppendLine();
+
+        }
+
         return script.ToString();
     }
 }

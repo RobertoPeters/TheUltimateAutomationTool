@@ -1,6 +1,7 @@
 ﻿@using Radzen.Blazor
 @using Tuat.Dialogs
 @using Tuat.Interfaces
+@using Tuat.Models
 @inherits ResultDialogBase<string?>
 
 
@@ -8,6 +9,7 @@
 			  ScriptEditorType="@ScriptEditorType"
 			  Script="@Script"
 			  ScriptEngine="@ScriptEngine"
+			  Automation="@Automation"
 			  Height="50vh" />
 <RadzenButton Click="@(async () => Close(await scriptEditor!.GetScriptAsync()))"
 			  Text="OK" />
@@ -28,6 +30,10 @@
 
 	[Parameter]
 	public IScriptEngine? ScriptEngine { get; set; }
+
+	[Parameter]
+	public Automation? Automation { get; set; }
+
 
 	ScriptEditor? scriptEditor;
 }
