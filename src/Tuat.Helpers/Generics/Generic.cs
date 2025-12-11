@@ -1,16 +1,23 @@
 ﻿using JasperFx.Core.Reflection;
+using System.Collections.Concurrent;
 
 namespace Tuat.Helpers.Generics;
 
 public static class Generic
 {
     private static readonly object _lockObject = new object();
+    private readonly static ConcurrentDictionary<string, Type?> _componentTypeCache = [];
 
     public static Type? ComponentType(string? typeName)
     {
         if (string.IsNullOrWhiteSpace(typeName))
         {
             return null;
+        }
+
+        if (_componentTypeCache.TryGetValue(typeName, out var cachedType))
+        {
+            return cachedType;
         }
 
         var asm = (from a in AppDomain.CurrentDomain.GetAssemblies()
@@ -22,7 +29,9 @@ public static class Generic
             return null;
         }
 
-        return asm.GetTypes().First(x => x.FullName == typeName);
+        var result = asm.GetTypes().First(x => x.FullName == typeName);
+        _componentTypeCache.TryAdd(typeName, result);
+        return result;
     }
 
     private static List<TypeDisplayName> _clientTypeDisplayNames = null!;
