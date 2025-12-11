@@ -1,9 +1,11 @@
 ﻿@using Blazor.Diagrams.Components.Renderers
 @using Blazor.Diagrams.Core.Models
+@using Microsoft.JSInterop
 @using Radzen
 @using Radzen.Blazor
 @using Tuat.Dialogs
 @inject DialogService DialogService
+@inject IJSRuntime JS
 @inherits ComponentBase
 
 <div class="default-node @(Node.Group != null ? "grouped" : "") @(Node.Selected ? "selected" : "")" style="position: relative;@(Node.Active && !Node.Selected ? "border-width: 5px;border-color:darkblue;" : "")">
@@ -17,6 +19,14 @@
 				  Text="Action"
 				  Click="@OnEditEntryActionAsync"
 				  style="position: absolute; right: 8px; bottom: 8px; z-index: 1;" />
+	@if (Node.State.IsSubState)
+	{
+		<RadzenButton Size=ButtonSize.ExtraSmall
+					  ButtonStyle="@ButtonStyle.Light"
+					  Text="Sub automation"
+					  Click="@OnEditSubStateActionAsync"
+					  style="position: absolute; left: 8px; bottom: 8px; z-index: 1;" />
+	}
 </div>
 
 @code {
@@ -37,6 +47,10 @@
 		{
 			Node.State.EntryAction = result;
 		}
+	}
 
+	async Task OnEditSubStateActionAsync()
+	{
+		await JS.InvokeVoidAsync("navigateToTarget", $"/editautomation/{Node.State.SubStateMachineId}", "_blank");
 	}
 }
