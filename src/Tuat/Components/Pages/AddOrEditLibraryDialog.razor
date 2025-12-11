@@ -53,7 +53,7 @@
         }
         Model = Library.CopyObject()!;
         Model.Id = Library.Id;
-        libraries = DataService.GetLibraries().Where(x => x.ScriptType == Model.ScriptType).ToList();
+        UpdateLibraries();
         base.OnInitialized();
     }
 

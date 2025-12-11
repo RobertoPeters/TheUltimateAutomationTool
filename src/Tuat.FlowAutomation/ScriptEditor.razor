@@ -53,7 +53,7 @@
 	{
 		if (Automation?.IncludeScriptId == null)
 		{
-			return "";
+			return ScriptEngine?.GetSystemScript(ClientService) ?? "";
 		}
 		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation.IncludeScriptId, null);
 		return ScriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "";

@@ -55,7 +55,7 @@
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
 		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", Height ?? "85vh" } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript(scriptEngine) ?? "" }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
+		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript(scriptEngine) }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
 		await base.OnInitializedAsync();
 	}
 
@@ -63,7 +63,7 @@
 	{
 		if (Automation?.IncludeScriptId == null)
 		{
-			return "";
+			return scriptEngine?.GetSystemScript(ClientService) ?? "";
 		}
 		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation.IncludeScriptId, null);
 		return scriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "";

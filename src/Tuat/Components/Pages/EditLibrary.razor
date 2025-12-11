@@ -8,10 +8,13 @@
 @inject IClientService ClientService
 @inject DialogService DialogService
 @inject IUIEventRegistration UIEventRegistration
-
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>TUAT - Edit Library</PageTitle>
+
+<NavigationLock ConfirmExternalNavigation="true"
+				OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
 
 <span>Edit Library: @Library.Name</span>
 
@@ -40,11 +43,13 @@
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
+	string? _unsavedData = null;
 
 	protected override async Task OnInitializedAsync()
 	{
 		Library = DataService.GetLibraries().First(x => x.Id == Id);
 		UIEventRegistration.LibraryChanged += LibraryChanged;
+		_unsavedData = Library.Script ?? "";
 		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Library.Script ?? "" }, { "Height", "85vh" } };
 		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript() }, { "Height", "85vh" }, { "ReadOnly", true } };
 		ScriptEditorType = Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.TypeName == Library.ScriptType)?.EditorComponentType;
@@ -77,6 +82,7 @@
 		{
 			return;
 		}
+		_unsavedData = Library.Script;
 		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(Library.Script);
 	}
 
@@ -92,6 +98,21 @@
 	async Task SaveAsync()
 	{
 		Library.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		_unsavedData = Library.Script;
 		await DataService.AddOrUpdateLibraryAsync(Library);
+	}
+
+	async Task OnBeforeInternalNavigation(LocationChangingContext context)
+	{
+		var currentData = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		if (_unsavedData != currentData)
+		{
+			var isConfirmed = await JS.InvokeAsync<bool>("confirm", "Changes are not saved. Are you sure you want to leave the page without saving changes?");
+
+			if (!isConfirmed)
+			{
+				context.PreventNavigation();
+			}
+		}
 	}
 }
