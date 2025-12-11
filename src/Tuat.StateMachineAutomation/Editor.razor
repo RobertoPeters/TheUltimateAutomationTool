@@ -246,6 +246,8 @@
             dialog.Script = _automationProperties.PreStartAction;
             dialog.ScriptEditorType = ScriptEditorType;
             dialog.ScriptEngine = _scriptEngine;
+            dialog.Automation = Automation;
+            dialog.IncludePreStartScript = false;
         });
         if (result != null)
         {

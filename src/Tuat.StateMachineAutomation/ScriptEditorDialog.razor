@@ -10,6 +10,7 @@
 			  Script="@Script"
 			  ScriptEngine="@ScriptEngine"
 			  Automation="@Automation"
+			  IncludePreStartScript="@IncludePreStartScript"
 			  Height="50vh" />
 <RadzenButton Click="@(async () => Close(await scriptEditor!.GetScriptAsync()))"
 			  Text="OK" />
@@ -33,6 +34,10 @@
 
 	[Parameter]
 	public Automation? Automation { get; set; }
+
+	[Parameter]
+	public bool IncludePreStartScript { get; set; } = true;
+
 
 	ScriptEditor? scriptEditor;
 }

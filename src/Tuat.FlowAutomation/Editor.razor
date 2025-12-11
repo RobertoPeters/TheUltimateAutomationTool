@@ -437,71 +437,71 @@
 		onContextPointerPosition = _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
 		if (modelOnPointerUp is NodeModel node)
 		{
-			       ContextMenuService.Open(args, ds =>
-					@<RadzenMenu Click="OnNodeContextMenuItemClick">
-			            <RadzenMenuItem Text="Edit" Value="1"></RadzenMenuItem>
-			            <RadzenMenuItem Text="Copy" Value="3" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
-			            <RadzenMenuItem Text="Delete" Value="2"></RadzenMenuItem>
-			        </RadzenMenu>);            
-		}
+			ContextMenuService.Open(args, ds =>
+			 @<RadzenMenu Click="OnNodeContextMenuItemClick">
+				 	<RadzenMenuItem Text="Edit" Value="1"></RadzenMenuItem>
+				 	<RadzenMenuItem Text="Copy" Value="3" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
+				 	<RadzenMenuItem Text="Delete" Value="2"></RadzenMenuItem>
+				 </RadzenMenu>);
+			 }
 		else if (modelOnPointerUp is LinkModel link)
-		{
+			{
+			}
+			else
+			{
+				ContextMenuService.Open(args, ds =>
+				 @<RadzenMenu Click="OnContextMenuItemClick">
+ 	<RadzenMenuItem Text="Edit properties" Value="5"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Add step" Value="1"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Save" Value="2"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Copy" Value="8">
+ 		<RadzenMenuItem Text="Selection" Value="9" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
+ 		<RadzenMenuItem Text="All steps" Disabled="@(!_automationProperties.Steps.Any() && !_automationProperties.Steps.Any())" Value="10"></RadzenMenuItem>
+ 		<RadzenMenuItem Text="Complete flow" Value="11"></RadzenMenuItem>
+ 	</RadzenMenuItem>
+ 	<RadzenMenuItem Text="Paste" Value="12" Disabled="@(!ClipboardService.CanPaste("Flow"))"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Undo" Value="14" Disabled="@(!CanUndo())"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Redo" Value="15" Disabled="@(!CanRedo())"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Select all" Value="13" Disabled="@(!_automationProperties.Steps.Any())"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Restart" Value="3"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Reload" Value="4"></RadzenMenuItem>
+ 	<RadzenMenuItem Text="Export" Value="7"></RadzenMenuItem>
+ </RadzenMenu>
+				);
+			}
+
 		}
-		else
+
+		async void OnNodeContextMenuItemClick(MenuItemEventArgs args)
 		{
-			   ContextMenuService.Open(args, ds =>
-			    @<RadzenMenu Click="OnContextMenuItemClick">
-			    <RadzenMenuItem Text="Edit properties" Value="5"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Add step" Value="1"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Save" Value="2"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Copy" Value="8">
-			        <RadzenMenuItem Text="Selection" Value="9" Disabled="@(!_diagram.GetSelectedModels().Any())"></RadzenMenuItem>
-			        <RadzenMenuItem Text="All steps" Disabled="@(!_automationProperties.Steps.Any() && !_automationProperties.Steps.Any())" Value="10"></RadzenMenuItem>
-			        <RadzenMenuItem Text="Complete flow" Value="11"></RadzenMenuItem>
-			    </RadzenMenuItem>
-			    <RadzenMenuItem Text="Paste" Value="12" Disabled="@(!ClipboardService.CanPaste("Flow"))"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Undo" Value="14" Disabled="@(!CanUndo())"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Redo" Value="15" Disabled="@(!CanRedo())"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Select all" Value="13" Disabled="@(!_automationProperties.Steps.Any())"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Restart" Value="3"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Reload" Value="4"></RadzenMenuItem>
-			    <RadzenMenuItem Text="Export" Value="7"></RadzenMenuItem>
-			</RadzenMenu>
-			   );            
-		}
-
-	}
-
-  async void OnNodeContextMenuItemClick(MenuItemEventArgs args)
-    {
-        ContextMenuService.Close();
-        var node = modelOnPointerUp as NodeModel;
-        switch (args.Value)
-        {
-            case 1:
-                await EditStepAsync(node!);
-                break;
-            case 2:
-                AddUndo();
-                RemoveNode(node!);
-                break;
-            case 3:
-                CopySelectionToClipboard();
-                break;
-        }
-    }
-
-	async void OnContextMenuItemClick(MenuItemEventArgs args)
-	{
-		switch (args.Value)
-		{
-			case 1:
-				{
+			ContextMenuService.Close();
+			var node = modelOnPointerUp as NodeModel;
+			switch (args.Value)
+			{
+				case 1:
+					await EditStepAsync(node!);
+					break;
+				case 2:
 					AddUndo();
-                    var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
-					await AddStepAsync((int)p.X, (int)p.Y);
-				}
-				break;
+					RemoveNode(node!);
+					break;
+				case 3:
+					CopySelectionToClipboard();
+					break;
+			}
+		}
+
+		async void OnContextMenuItemClick(MenuItemEventArgs args)
+		{
+			switch (args.Value)
+			{
+				case 1:
+					{
+						AddUndo();
+						var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
+						await AddStepAsync((int)p.X, (int)p.Y);
+					}
+					break;
 				case 2:
 					await SaveAsync();
 					break;
@@ -516,7 +516,7 @@
 					SaveAutomationPropertiesToAutomation();
 					await OnEditSettings.InvokeAsync();
 					await InvokeAsync(StateHasChanged);
-				break;
+					break;
 				case 7:
 					await ExportAsync();
 					break;
@@ -533,8 +533,8 @@
 					break;
 				case 12:
 					{
-	                    var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
- 						PasteFromClipboard((int)p.X, (int)p.Y);
+						var p = onContextPointerPosition ?? _diagram.GetRelativeMousePoint((int)args.ClientX, (int)args.ClientY);
+						PasteFromClipboard((int)p.X, (int)p.Y);
 					}
 					break;
 				case 13:
@@ -546,339 +546,341 @@
 				case 15:
 					await RedoAsync(_diagram);
 					break;
+			}
+			onContextPointerPosition = null;
+			ContextMenuService.Close();
 		}
-		onContextPointerPosition = null;
-		ContextMenuService.Close();
-	}
 
-    void PasteFromClipboard(int x, int y)
-    {
-        var content = ClipboardService.Paste();
-        content.TryGetValue(typeof(Automation), out object? automationObject);
-        content.TryGetValue(typeof(List<Step>), out object? stepsObject);
-        content.TryGetValue(typeof(List<Transition>), out object? transitionsObject);
-
-        List<Transition> transitions = transitionsObject == null ? [] : (List<Transition>)transitionsObject!;
-        List<Step> steps = stepsObject == null ? [] : (List<Step>)stepsObject!;
-        Automation? automation = automationObject == null ? null : (Automation)automationObject!;
-
-        if (!transitions.Any() && !steps.Any())
-        {
-            return;
-        }
-
-        AddUndo();
-
-        if (automation != null)
-        {
-            Automation.IsSubAutomation = automation.IsSubAutomation;
-            Automation.Enabled = automation.Enabled;
-            AutomationProperties properties = new();
-            if (!string.IsNullOrWhiteSpace(automation.Data))
-            {
-                properties = System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(automation.Data) ?? new();
-            }
-            _automationProperties.PreStartAction = properties.PreStartAction;
-            transitions = properties.Transitions.ToList();
-            steps = properties.Steps.ToList();
-        }
-
-        int? minX = null;
-        int? minY = null;
-
-        foreach (var step in steps.Where(x => !string.IsNullOrWhiteSpace(x.UIData)).ToList())
-        {
-            var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
-            if (uiData != null && (minX == null || uiData.X < minX))
-            {
-                minX = uiData.X;
-            }
-            if (uiData != null && (minY == null || uiData.Y < minY))
-            {
-                minY = uiData.Y;
-            }
-        }
-        minX ??= 0;
-        minY ??= 0;
-
-        Dictionary<Guid, Guid> oldStepIdToNewId = [];
-        var p = _diagram.GetRelativeMousePoint(x, y);
-        foreach (var step in steps.ToList())
-        {
-            var oldId = step.Id;
-			step.Id = Guid.NewGuid();
-			oldStepIdToNewId.Add(oldId, step.Id);
-            var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
-            var newStep = AddStepToDiagram(step, (int)p.X + (uiData?.X ?? 0) - (minX ?? 0), (int)p.Y + (uiData?.Y ?? 0) - (minY ?? 0));
-			_automationProperties.Steps.Add(newStep);
-            _diagram.SelectModel(_diagram.GetNode(newStep)!, false);
-        }
-
-        foreach (var transition in transitions)
-        {
-            if (transition.FromStepId == null || transition.ToStepId == null) continue;
-
-            LinkUIData? uiData = null;
-            if (!string.IsNullOrWhiteSpace(transition.UIData))
-            {
-                uiData = System.Text.Json.JsonSerializer.Deserialize<LinkUIData>(transition.UIData!);
-            }
-            transition.FromStepId = oldStepIdToNewId[transition.FromStepId.Value];
-            transition.ToStepId = oldStepIdToNewId[transition.ToStepId.Value];
-            transition.Id = Guid.NewGuid();
-            _automationProperties.Transitions.Add(transition);
-
-			var targetStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.ToStepId);
-			var sourceStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.FromStepId);
-			AddLink(sourceStep!, transition.FromStepPort!.Value, targetStep!, transition.ToStepPort!.Value);
-        }
-
-        _diagram.Refresh();
-    }
-
-    void CopyFlowToClipboard()
-    {
-        var content = new Dictionary<Type, object?>();
-
-        AddUIDataToComponents();
-        content.Add(typeof(Automation), Automation);
-
-        ClipboardService.Copy("Flow", content);
-    }
-
-    void CopyAllStepsToClipboard()
-    {
-        var content = new Dictionary<Type, object?>();
-
-        AddUIDataToComponents();
-        content.Add(typeof(List<Step>), _automationProperties.Steps);
-        content.Add(typeof(List<Transition>), _automationProperties.Transitions);
-
-        ClipboardService.Copy("Flow", content);
-    }
-
-    async Task SaveAsync()
-    {
-        await OnSave.InvokeAsync();
-    }
-
-    void Restart()
-    {
-        OnRestart.InvokeAsync();
-    }
-
-    Stream GetFileStream()
-    {
-        var fileStream = new MemoryStream();
-
-        AddUIDataToComponents();
-        System.Text.Json.JsonSerializer.Serialize(fileStream, Automation);
-        fileStream.Position = 0;
-
-        return fileStream;
-    }
-
-    async Task ExportAsync()
-    {
-        var fileStream = GetFileStream();
-        var fileName = "tuat_export_flow.json";
-
-        using var streamRef = new DotNetStreamReference(stream: fileStream);
-
-        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
-    }
-
-    void CopySelectionToClipboard()
-    {
-        var content = new Dictionary<Type, object?>();
-        List<Step> steps = [];
-        List<Transition> transitions = [];
-        content.Add(typeof(List<Step>), steps);
-        content.Add(typeof(List<Transition>), transitions);
-
-        AddUIDataToComponents();
-        var selectedModels = _diagram.GetSelectedModels().ToList();
-        foreach (var sm in selectedModels)
-        {
-            if (sm is IStepNodeModel node)
-            {
-                var step = node.BaseStep!;
-                steps.Add(step);
-            }
-        }
-        foreach (var sm in selectedModels)
-        {
-            LinkModel? link = sm as LinkModel;
-            if (link != null && link.Target is Blazor.Diagrams.Core.Anchors.SinglePortAnchor)
-            {
-                var source = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Source).Port.Parent;
-                var target = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Target).Port.Parent;
-                var sourceStep = source.GetStep(steps);
-                var targetStep = target.GetStep(steps);
-                if (sourceStep != null && targetStep != null)
-                {
-                    var transition = _automationProperties.Transitions.First(x => x.FromStepId == sourceStep.Id && x.ToStepId == targetStep.Id);
-                    transitions.Add(transition);
-                }
-            }
-        }
-
-        ClipboardService.Copy("Flow", content);
-    }
-
-	async Task EditStepAsync(NodeModel node)
-	{
-		var step = node.GetStep(_automationProperties)!;
-		var result = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Edit Step", dialog =>
+		void PasteFromClipboard(int x, int y)
 		{
-			dialog.Step = step;
-			dialog.ScriptEditorType = ScriptEditorType;
-			dialog.ScriptEngine = _scriptEngine;
-			dialog.Automation = Automation;
-		});
-		if (result != null)
-		{
+			var content = ClipboardService.Paste();
+			content.TryGetValue(typeof(Automation), out object? automationObject);
+			content.TryGetValue(typeof(List<Step>), out object? stepsObject);
+			content.TryGetValue(typeof(List<Transition>), out object? transitionsObject);
+
+			List<Transition> transitions = transitionsObject == null ? [] : (List<Transition>)transitionsObject!;
+			List<Step> steps = stepsObject == null ? [] : (List<Step>)stepsObject!;
+			Automation? automation = automationObject == null ? null : (Automation)automationObject!;
+
+			if (!transitions.Any() && !steps.Any())
+			{
+				return;
+			}
+
 			AddUndo();
-			step.Name = result.Name;
-			step.Description = result.Description;
-			step.StepParameters = result.StepParameters;
-			SetNodeTitle(node, step);
-			node.Refresh();
-		}
-	}
 
-	async Task AddStepAsync(int x, int y)
-	{
-		SaveAutomationPropertiesToAutomation();
-		var step = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Add Step", dialog =>
-		{
-			dialog.Step = null;
-			dialog.ScriptEditorType = ScriptEditorType;
-			dialog.ScriptEngine = _scriptEngine;
-			dialog.Automation = Automation;
-		});
-		if (step != null)
-		{
-			AddNewStep(step, x, y);
+			if (automation != null)
+			{
+				Automation.IsSubAutomation = automation.IsSubAutomation;
+				Automation.Enabled = automation.Enabled;
+				AutomationProperties properties = new();
+				if (!string.IsNullOrWhiteSpace(automation.Data))
+				{
+					properties = System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(automation.Data) ?? new();
+				}
+				_automationProperties.PreStartAction = properties.PreStartAction;
+				transitions = properties.Transitions.ToList();
+				steps = properties.Steps.ToList();
+			}
+
+			int? minX = null;
+			int? minY = null;
+
+			foreach (var step in steps.Where(x => !string.IsNullOrWhiteSpace(x.UIData)).ToList())
+			{
+				var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
+				if (uiData != null && (minX == null || uiData.X < minX))
+				{
+					minX = uiData.X;
+				}
+				if (uiData != null && (minY == null || uiData.Y < minY))
+				{
+					minY = uiData.Y;
+				}
+			}
+			minX ??= 0;
+			minY ??= 0;
+
+			Dictionary<Guid, Guid> oldStepIdToNewId = [];
+			var p = _diagram.GetRelativeMousePoint(x, y);
+			foreach (var step in steps.ToList())
+			{
+				var oldId = step.Id;
+				step.Id = Guid.NewGuid();
+				oldStepIdToNewId.Add(oldId, step.Id);
+				var uiData = System.Text.Json.JsonSerializer.Deserialize<NodeUIData>(step.UIData!);
+				var newStep = AddStepToDiagram(step, (int)p.X + (uiData?.X ?? 0) - (minX ?? 0), (int)p.Y + (uiData?.Y ?? 0) - (minY ?? 0));
+				_automationProperties.Steps.Add(newStep);
+				_diagram.SelectModel(_diagram.GetNode(newStep)!, false);
+			}
+
+			foreach (var transition in transitions)
+			{
+				if (transition.FromStepId == null || transition.ToStepId == null) continue;
+
+				LinkUIData? uiData = null;
+				if (!string.IsNullOrWhiteSpace(transition.UIData))
+				{
+					uiData = System.Text.Json.JsonSerializer.Deserialize<LinkUIData>(transition.UIData!);
+				}
+				transition.FromStepId = oldStepIdToNewId[transition.FromStepId.Value];
+				transition.ToStepId = oldStepIdToNewId[transition.ToStepId.Value];
+				transition.Id = Guid.NewGuid();
+				_automationProperties.Transitions.Add(transition);
+
+				var targetStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.ToStepId);
+				var sourceStep = _automationProperties.Steps.FirstOrDefault(x => x.Id == transition.FromStepId);
+				AddLink(sourceStep!, transition.FromStepPort!.Value, targetStep!, transition.ToStepPort!.Value);
+			}
+
 			_diagram.Refresh();
 		}
-	}
 
-	Step AddStepToDiagram(Step step, int x, int y)
-	{
-		var stepInfo = Generic.StepTypeDisplayNames.First(s => s.TypeName == step.StepTypeName);
+		void CopyFlowToClipboard()
+		{
+			var content = new Dictionary<Type, object?>();
 
-		var d1 = typeof(StepNodeModel<>);
-		Type[] typeArgs = { stepInfo.Type };
-		var makeme = d1.MakeGenericType(typeArgs);
-		if (step.GetType() != stepInfo.Type)
-		{
-			step = (Step)step.CopyObjectToOtherType(stepInfo.Type)!;
-		}
-		var stepNodeModel = (NodeModel)Activator.CreateInstance(makeme, step, Automation, new Blazor.Diagrams.Core.Geometry.Point(x, y))!;
-		step.Initialize();
-		SetNodeTitle(stepNodeModel, step);
-		var node = _diagram.Nodes.Add(stepNodeModel)!;
-		foreach (var port in step.InputPorts)
-		{
-			node.AddPort(port);
-		}
-		foreach (var port in step.OutputPorts)
-		{
-			node.AddPort(port);
-		}
-		return step;
-	}
+			AddUIDataToComponents();
+			content.Add(typeof(Automation), Automation);
 
-	void SetNodeTitle(NodeModel node, Step step)
-	{
-		if (!string.IsNullOrWhiteSpace(step.Name))
-		{
-			node.Title = step.Name;
+			ClipboardService.Copy("Flow", content);
 		}
-		else
+
+		void CopyAllStepsToClipboard()
+		{
+			var content = new Dictionary<Type, object?>();
+
+			AddUIDataToComponents();
+			content.Add(typeof(List<Step>), _automationProperties.Steps);
+			content.Add(typeof(List<Transition>), _automationProperties.Transitions);
+
+			ClipboardService.Copy("Flow", content);
+		}
+
+		async Task SaveAsync()
+		{
+			await OnSave.InvokeAsync();
+		}
+
+		void Restart()
+		{
+			OnRestart.InvokeAsync();
+		}
+
+		Stream GetFileStream()
+		{
+			var fileStream = new MemoryStream();
+
+			AddUIDataToComponents();
+			System.Text.Json.JsonSerializer.Serialize(fileStream, Automation);
+			fileStream.Position = 0;
+
+			return fileStream;
+		}
+
+		async Task ExportAsync()
+		{
+			var fileStream = GetFileStream();
+			var fileName = "tuat_export_flow.json";
+
+			using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+			await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+		}
+
+		void CopySelectionToClipboard()
+		{
+			var content = new Dictionary<Type, object?>();
+			List<Step> steps = [];
+			List<Transition> transitions = [];
+			content.Add(typeof(List<Step>), steps);
+			content.Add(typeof(List<Transition>), transitions);
+
+			AddUIDataToComponents();
+			var selectedModels = _diagram.GetSelectedModels().ToList();
+			foreach (var sm in selectedModels)
+			{
+				if (sm is IStepNodeModel node)
+				{
+					var step = node.BaseStep!;
+					steps.Add(step);
+				}
+			}
+			foreach (var sm in selectedModels)
+			{
+				LinkModel? link = sm as LinkModel;
+				if (link != null && link.Target is Blazor.Diagrams.Core.Anchors.SinglePortAnchor)
+				{
+					var source = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Source).Port.Parent;
+					var target = ((Blazor.Diagrams.Core.Anchors.SinglePortAnchor)link.Target).Port.Parent;
+					var sourceStep = source.GetStep(steps);
+					var targetStep = target.GetStep(steps);
+					if (sourceStep != null && targetStep != null)
+					{
+						var transition = _automationProperties.Transitions.First(x => x.FromStepId == sourceStep.Id && x.ToStepId == targetStep.Id);
+						transitions.Add(transition);
+					}
+				}
+			}
+
+			ClipboardService.Copy("Flow", content);
+		}
+
+		async Task EditStepAsync(NodeModel node)
+		{
+			var step = node.GetStep(_automationProperties)!;
+			var result = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Edit Step", dialog =>
+			{
+				dialog.Step = step;
+				dialog.ScriptEditorType = ScriptEditorType;
+				dialog.ScriptEngine = _scriptEngine;
+				dialog.Automation = Automation;
+			});
+			if (result != null)
+			{
+				AddUndo();
+				step.Name = result.Name;
+				step.Description = result.Description;
+				step.StepParameters = result.StepParameters;
+				SetNodeTitle(node, step);
+				node.Refresh();
+			}
+		}
+
+		async Task AddStepAsync(int x, int y)
+		{
+			SaveAutomationPropertiesToAutomation();
+			var step = await DialogService.ShowDialogAsync<AddOrEditStepDialog, Step>("Add Step", dialog =>
+			{
+				dialog.Step = null;
+				dialog.ScriptEditorType = ScriptEditorType;
+				dialog.ScriptEngine = _scriptEngine;
+				dialog.Automation = Automation;
+			});
+			if (step != null)
+			{
+				AddNewStep(step, x, y);
+				_diagram.Refresh();
+			}
+		}
+
+		Step AddStepToDiagram(Step step, int x, int y)
 		{
 			var stepInfo = Generic.StepTypeDisplayNames.First(s => s.TypeName == step.StepTypeName);
-			node.Title =stepInfo.DisplayName;
+
+			var d1 = typeof(StepNodeModel<>);
+			Type[] typeArgs = { stepInfo.Type };
+			var makeme = d1.MakeGenericType(typeArgs);
+			if (step.GetType() != stepInfo.Type)
+			{
+				step = (Step)step.CopyObjectToOtherType(stepInfo.Type)!;
+			}
+			var stepNodeModel = (NodeModel)Activator.CreateInstance(makeme, step, Automation, new Blazor.Diagrams.Core.Geometry.Point(x, y))!;
+			step.Initialize();
+			SetNodeTitle(stepNodeModel, step);
+			var node = _diagram.Nodes.Add(stepNodeModel)!;
+			foreach (var port in step.InputPorts)
+			{
+				node.AddPort(port);
+			}
+			foreach (var port in step.OutputPorts)
+			{
+				node.AddPort(port);
+			}
+			return step;
 		}
-	}
 
-	Step AddNewStep(Step step, int x, int y)
-	{
-		step.Id = Guid.NewGuid();
-		_automationProperties.Steps.Add(step);
-		return AddStepToDiagram(step, x, y);
-	}
-
-
-	async Task EditPreStartActionAsync()
-	{
-		var result = await DialogService.ShowDialogAsync<ScriptEditorDialog, string?>("Pre Start Action", dialog =>
+		void SetNodeTitle(NodeModel node, Step step)
 		{
-			dialog.Script = _automationProperties.PreStartAction;
-			dialog.ScriptEditorType = ScriptEditorType;
-			dialog.ScriptEngine = _scriptEngine;
-		});
-		if (result != null)
-		{
-			_automationProperties.PreStartAction = result;
+			if (!string.IsNullOrWhiteSpace(step.Name))
+			{
+				node.Title = step.Name;
+			}
+			else
+			{
+				var stepInfo = Generic.StepTypeDisplayNames.First(s => s.TypeName == step.StepTypeName);
+				node.Title = stepInfo.DisplayName;
+			}
 		}
-	}
 
-	void SaveAutomationPropertiesToAutomation()
-	{
-		AddUIDataToComponents();
-		Automation.Data = System.Text.Json.JsonSerializer.Serialize(_automationProperties);
-	}
+		Step AddNewStep(Step step, int x, int y)
+		{
+			step.Id = Guid.NewGuid();
+			_automationProperties.Steps.Add(step);
+			return AddStepToDiagram(step, x, y);
+		}
 
-	void AddUIDataToComponents()
-	{
-		foreach (var step in _automationProperties.Steps)
-		{
-			var uiData = new NodeUIData();
-			var node = _diagram.GetNode(step)!;
-			uiData.X = (int)node.Position.X;
-			uiData.Y = (int)node.Position.Y;
-			step.UIData = System.Text.Json.JsonSerializer.Serialize(uiData);
-		}
-	}
 
-	string? GetUndoData()
-	{
-		AddUIDataToComponents();
-		SaveAutomationPropertiesToAutomation();
-		return System.Text.Json.JsonSerializer.Serialize(Automation);
-	}
+		async Task EditPreStartActionAsync()
+		{
+			var result = await DialogService.ShowDialogAsync<ScriptEditorDialog, string?>("Pre Start Action", dialog =>
+			{
+				dialog.Script = _automationProperties.PreStartAction;
+				dialog.ScriptEditorType = ScriptEditorType;
+				dialog.ScriptEngine = _scriptEngine;
+				dialog.Automation = Automation;
+				dialog.IncludePreStartScript = false;
+			});
+			if (result != null)
+			{
+				_automationProperties.PreStartAction = result;
+			}
+		}
 
-	async Task OnImport(UploadChangeEventArgs args)
-	{
-		AddUndo();
-		if (!args.Files.Any())
+		void SaveAutomationPropertiesToAutomation()
 		{
-			return;
+			AddUIDataToComponents();
+			Automation.Data = System.Text.Json.JsonSerializer.Serialize(_automationProperties);
 		}
-		var file = args.Files.First();
-		var stream = file.OpenReadStream();
-		var stateMachine = await System.Text.Json.JsonSerializer.DeserializeAsync<Automation>(stream);
-		if (stateMachine != null)
-		{
-			await OnImport(stateMachine);
-		}
-	}
 
-	async Task OnImport(Automation automation)
-	{
-		if (!string.IsNullOrWhiteSpace(automation.Data))
+		void AddUIDataToComponents()
 		{
-			_automationProperties = System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(automation.Data) ?? new();
+			foreach (var step in _automationProperties.Steps)
+			{
+				var uiData = new NodeUIData();
+				var node = _diagram.GetNode(step)!;
+				uiData.X = (int)node.Position.X;
+				uiData.Y = (int)node.Position.Y;
+				step.UIData = System.Text.Json.JsonSerializer.Serialize(uiData);
+			}
 		}
-		else
+
+		string? GetUndoData()
 		{
-			_automationProperties = new();
+			AddUIDataToComponents();
+			SaveAutomationPropertiesToAutomation();
+			return System.Text.Json.JsonSerializer.Serialize(Automation);
 		}
-		SaveAutomationPropertiesToAutomation();
-		await ReloadDiagramAsync();
-	}
+
+		async Task OnImport(UploadChangeEventArgs args)
+		{
+			AddUndo();
+			if (!args.Files.Any())
+			{
+				return;
+			}
+			var file = args.Files.First();
+			var stream = file.OpenReadStream();
+			var stateMachine = await System.Text.Json.JsonSerializer.DeserializeAsync<Automation>(stream);
+			if (stateMachine != null)
+			{
+				await OnImport(stateMachine);
+			}
+		}
+
+		async Task OnImport(Automation automation)
+		{
+			if (!string.IsNullOrWhiteSpace(automation.Data))
+			{
+				_automationProperties = System.Text.Json.JsonSerializer.Deserialize<AutomationProperties>(automation.Data) ?? new();
+			}
+			else
+			{
+				_automationProperties = new();
+			}
+			SaveAutomationPropertiesToAutomation();
+			await ReloadDiagramAsync();
+		}
 
 	private void AddUndo()
 	{

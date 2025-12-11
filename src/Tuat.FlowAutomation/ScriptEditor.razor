@@ -1,4 +1,5 @@
 ﻿@using Radzen.Blazor
+@using System.Text
 @using Tuat.Dialogs
 @using Tuat.Interfaces
 @using Tuat.Models
@@ -33,6 +34,9 @@
 	[Parameter]
 	public Automation? Automation { get; set; }
 
+	[Parameter]
+	public bool IncludePreStartScript { get; set; } = true;
+
 	Dictionary<string, object?>? EditorPropertiesParameters;
 	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
@@ -51,12 +55,30 @@
 
 	string GetSystemScript()
 	{
+		if (Automation == null)
+		{
+			return "";
+		}
+
+		var result = new StringBuilder();
+
 		if (Automation?.IncludeScriptId == null)
 		{
-			return ScriptEngine?.GetSystemScript(ClientService) ?? "";
+			result.AppendLine(ScriptEngine?.GetSystemScript(ClientService) ?? "");
 		}
-		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation.IncludeScriptId, null);
-		return ScriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "";
+		var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, Automation!.IncludeScriptId, null);
+		result.AppendLine(ScriptEngine?.GetSystemScript(ClientService, additionalScript: additionalScript) ?? "");
+
+		if (IncludePreStartScript)
+		{
+			var automationProperties = FlowHandler.GetAutomationProperties(Automation.Data);
+			if (!string.IsNullOrWhiteSpace(automationProperties.PreStartAction))
+			{
+				result.AppendLine(automationProperties.PreStartAction);
+			}
+		}
+
+		return result.ToString();
 	}
 
 }
