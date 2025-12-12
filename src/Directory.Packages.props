@@ -4,20 +4,20 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Jint" Version="4.4.2" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="5.0.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
     <PackageVersion Include="MoonSharp" Version="2.0.0" />
     <PackageVersion Include="MQTTnet" Version="5.0.1.1416" />
     <PackageVersion Include="pythonnet" Version="3.0.5" />
-    <PackageVersion Include="Radzen.Blazor" Version="8.3.5" />
+    <PackageVersion Include="Radzen.Blazor" Version="8.4.0" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
     <PackageVersion Include="SvgPathProperties" Version="1.1.2" />
-    <PackageVersion Include="WolverineFx" Version="5.4.1" />
+    <PackageVersion Include="WolverineFx" Version="5.7.1" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.1" />
     <PackageVersion Include="BlazorMonaco" Version="3.4.0" />
   </ItemGroup>
 </Project>
