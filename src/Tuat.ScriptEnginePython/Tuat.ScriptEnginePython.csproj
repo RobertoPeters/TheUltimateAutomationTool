@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
@@ -15,7 +14,6 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" />
 		<PackageReference Include="pythonnet" />
 		<PackageReference Include="Radzen.Blazor" />
-		<PackageReference Include="BlazorMonaco" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -25,6 +23,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Tuat.Helpers\Tuat.Helpers.csproj" />
 		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
+		<ProjectReference Include="..\Tuat.ScriptEditorHelper\Tuat.ScriptEditorHelper.csproj" />
 	</ItemGroup>
 
 </Project>

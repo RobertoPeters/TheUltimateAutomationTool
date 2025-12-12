@@ -22,6 +22,7 @@
   <Project Path="Tuat.Models/Tuat.Models.csproj" Id="e641d196-48e4-4075-ad5a-0c45b49626af" />
   <Project Path="Tuat.MqttClient/Tuat.MqttClient.csproj" Id="ab88adfe-c341-4d48-b948-bfa977ee69fc" />
   <Project Path="Tuat.Repository/Tuat.Repository.csproj" Id="d15750c9-9b5c-4128-90ce-1cc915371fbf" />
+  <Project Path="Tuat.ScriptEditorHelper/Tuat.ScriptEditorHelper.csproj" Id="1a1d0bb9-2468-42e4-a85a-1c6b572846f2" />
   <Project Path="Tuat.ScriptEngineCSharp/Tuat.ScriptEngineCSharp.csproj" Id="22971be8-4143-4c4a-9391-b251f2610906" />
   <Project Path="Tuat.ScriptEngineJavaScript/Tuat.ScriptEngineJavaScript.csproj" Id="23a37bae-aca7-4c77-8f98-7e908015e59f" />
   <Project Path="Tuat.ScriptEnginePython/Tuat.ScriptEnginePython.csproj" Id="a3ed52c6-cb57-496c-bd71-16e84ecda84d" />

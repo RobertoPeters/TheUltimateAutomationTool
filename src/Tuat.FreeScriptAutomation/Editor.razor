@@ -11,14 +11,7 @@
  	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Edit properties" Click="EditSettingsAsync" />
 	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" Click="SaveAsync" />
 	<RadzenButton Size="ButtonSize.ExtraSmall" Text="Restart" Click="Restart" />
-	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
-		<RadzenSplitterPane Min="10px">
-			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
-		</RadzenSplitterPane>
-		<RadzenSplitterPane Size="300px" Min="10px">
-			<DynamicComponent @ref="systemScriptEditor" Type="ScriptEditorType" Parameters="SystemScriptParameters" />
-		</RadzenSplitterPane>
-	</RadzenSplitter>
+	<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
 }
 
 @code {
@@ -41,9 +34,7 @@
 	public EventCallback OnEditSettings { get; set; }
 
 	Dictionary<string, object?>? EditorPropertiesParameters;
-	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
-	DynamicComponent? systemScriptEditor;
 	AutomationProperties automationProperties = null!;
 
 	protected override async Task OnInitializedAsync()
@@ -54,8 +45,7 @@
 		{
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
-		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "Height", Height ?? "85vh" } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript(scriptEngine) }, { "Height", Height ?? "85vh" }, { "ReadOnly", true } };
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "SystemScript", GetSystemScript(scriptEngine) }, { "Height", Height ?? "85vh" } };
 		await base.OnInitializedAsync();
 	}
 
@@ -78,8 +68,7 @@
 		{
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
-		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(automationProperties.Script);
-		await ((IScriptEditor)systemScriptEditor!.Instance!).SetScriptAsync(GetSystemScript(scriptEngine));
+		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(automationProperties.Script, GetSystemScript(scriptEngine));
 	}
 
 	async Task EditSettingsAsync()

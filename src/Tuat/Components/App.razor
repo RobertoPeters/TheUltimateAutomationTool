@@ -51,7 +51,11 @@
             }
             anchorElement.click();
             anchorElement.remove();
-        };
+        }
+        window.scriptEditorSetHiddenAreas = (id, ranges) => {
+            let editor = window.blazorMonaco.editor.getEditor(id, true);
+            editor.setHiddenAreas(ranges, true);
+        }
     </script>
 </body>
 

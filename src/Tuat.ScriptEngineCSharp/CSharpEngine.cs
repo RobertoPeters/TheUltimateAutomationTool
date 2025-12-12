@@ -183,12 +183,6 @@ public class CSharpEngine : IScriptEngine
     public string GetSystemScript(IClientService clientService, Guid? instanceId = null, string? additionalScript = null, List<SubAutomationParameter>? subAutomationParameters = null, List<AutomationInputVariable>? inputValues = null)
     {
         var script = new StringBuilder();
-        if (!string.IsNullOrEmpty(additionalScript))
-        {
-            script.AppendLine(additionalScript);
-        }
-        script.AppendLine();
-
         script.AppendLine(SystemMethods.SystemScript());
         script.AppendLine();
         script.AppendLine($""""var instanceId = "{(instanceId ?? Guid.Empty).ToString()}"; """");
@@ -257,6 +251,12 @@ public class CSharpEngine : IScriptEngine
                 script.AppendLine($"var {p.ScriptVariableName} = {p.DefaultValue};");
             }
         });
+
+        if (!string.IsNullOrEmpty(additionalScript))
+        {
+            script.AppendLine(additionalScript);
+        }
+        script.AppendLine();
 
         return script.ToString();
     }

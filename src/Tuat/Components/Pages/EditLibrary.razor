@@ -24,14 +24,7 @@
 		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Properties" Click="@EditLibraryAsync" />
 		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" Click="@SaveAsync" />
 	</div>
-	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
-		<RadzenSplitterPane Min="10px">
-			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
-		</RadzenSplitterPane>
-		<RadzenSplitterPane Size="300px" Min="10px">
-			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
-		</RadzenSplitterPane>
-	</RadzenSplitter>
+	<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
 }
 
 @code {
@@ -41,7 +34,6 @@
 	Library Library = null!;
 	Type? ScriptEditorType = null;
 	Dictionary<string, object?>? EditorPropertiesParameters;
-	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
 	string? _unsavedData = null;
 
@@ -50,8 +42,7 @@
 		Library = DataService.GetLibraries().First(x => x.Id == Id);
 		UIEventRegistration.LibraryChanged += LibraryChanged;
 		_unsavedData = Library.Script ?? "";
-		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Library.Script ?? "" }, { "Height", "85vh" } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript() }, { "Height", "85vh" }, { "ReadOnly", true } };
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Library.Script ?? "" }, { "SystemScript", GetSystemScript() }, { "Height", "85vh" } };
 		ScriptEditorType = Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.TypeName == Library.ScriptType)?.EditorComponentType;
 		await base.OnInitializedAsync();
 	}
@@ -83,7 +74,7 @@
 			return;
 		}
 		_unsavedData = Library.Script;
-		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(Library.Script);
+		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(Library.Script, GetSystemScript());
 	}
 
 	async Task EditLibraryAsync()

@@ -1,0 +1,121 @@
+﻿@using BlazorMonaco.Editor
+@using Microsoft.JSInterop
+@using Radzen
+@using Radzen.Blazor
+@using System.Text
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject IJSRuntime JS
+
+<style>
+	.my-editor-class {
+		height: @(string.IsNullOrWhiteSpace(Height) ? "85vh" : Height);
+	}
+</style>
+
+<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
+	<RadzenSplitterPane Min="10px">
+		<StandaloneCodeEditor @ref="standaloneCodeEditor"
+							  CssClass="my-editor-class"
+							  OnDidInit="@OnInitAsync"
+							  ConstructionOptions="EditorConstructionOptions" />
+	</RadzenSplitterPane>
+	<RadzenSplitterPane Size="300px" Min="10px">
+		<StandaloneCodeEditor @ref="systemStandaloneCodeEditor"
+							  CssClass="my-editor-class"							  
+							  ConstructionOptions="EditorConstructionOptionsSystem" />
+	</RadzenSplitterPane>
+</RadzenSplitter>
+
+
+@code {
+	[Parameter]
+	public string? Script { get; set; }
+
+	[Parameter]
+	public string? SystemScript { get; set; }
+
+	[Parameter]
+	public string? Height { get; set; }
+
+	[Parameter]
+	public bool ReadOnly { get; set; }
+
+	private StandaloneCodeEditor? standaloneCodeEditor;
+	private StandaloneCodeEditor? systemStandaloneCodeEditor;
+	private int systemScriptLength = 0;
+	private int scriptStartPosition = 0;
+
+	protected virtual string Language => "javascript";
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+		{
+			AutomaticLayout = true,
+			Language = Language,
+			Value = GetEditorContent(),
+			ReadOnly = ReadOnly
+		};
+	}
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptionsSystem(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+		{
+			AutomaticLayout = true,
+			Language = Language,
+			Value = SystemScript ?? "",
+			ReadOnly = true
+		};
+	}
+
+	private string GetEditorContent()
+	{
+		if (string.IsNullOrWhiteSpace(SystemScript))
+		{
+			return Script ?? "";
+		}
+		var result = new StringBuilder();
+		var lines = SystemScript.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+		foreach(var line in lines)
+		{
+			result.AppendLine(line);			
+		}
+		scriptStartPosition = result.ToString().Length;
+		systemScriptLength = lines.Count();
+		result.AppendLine(Script?.Trim());
+
+		return result.ToString();
+	}
+
+	private async Task OnInitAsync()
+	{
+		await HideSystemLinesAsync();
+	}
+
+	private async Task HideSystemLinesAsync()
+	{
+		if (!string.IsNullOrWhiteSpace(SystemScript))
+		{
+			await JS.InvokeVoidAsync("scriptEditorSetHiddenAreas", standaloneCodeEditor!.Id, new List<BlazorMonaco.Range>());
+			List<BlazorMonaco.Range> ranges = [new BlazorMonaco.Range(1, 1, systemScriptLength, 10)];
+			await JS.InvokeVoidAsync("scriptEditorSetHiddenAreas", standaloneCodeEditor!.Id, ranges);
+		}
+	}
+
+
+	public async Task<string?> GetScriptAsync()
+	{
+		return (await standaloneCodeEditor!.GetValue()).Substring(scriptStartPosition).Trim();
+	}
+
+	public async Task SetScriptAsync(string? text, string? systemScript)
+	{
+		Script = text?.Trim() ?? "";
+		SystemScript = systemScript;
+		await standaloneCodeEditor!.SetValue(GetEditorContent());
+		await HideSystemLinesAsync();
+	}
+}
+

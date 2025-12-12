@@ -8,14 +8,7 @@
 
 @if (ScriptEditorType != null)
 {
-	<RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
-		<RadzenSplitterPane Min="10px">
-			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
-		</RadzenSplitterPane>
-		<RadzenSplitterPane Size="300px" Min="10px">
-			<DynamicComponent Type="ScriptEditorType" Parameters="SystemScriptParameters" />
-		</RadzenSplitterPane>
-	</RadzenSplitter>
+	<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
 }
 
 @code {
@@ -38,13 +31,11 @@
 	public bool IncludePreStartScript { get; set; } = true;
 
 	Dictionary<string, object?>? EditorPropertiesParameters;
-	Dictionary<string, object?>? SystemScriptParameters;
 	DynamicComponent? scriptEditor;
 
 	protected override async Task OnInitializedAsync()
 	{
-		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Script }, { "Height", Height } };
-		SystemScriptParameters = new Dictionary<string, object?>() { { "Script", GetSystemScript() }, { "Height", Height }, { "ReadOnly", true } };
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Script }, { "SystemScript", GetSystemScript() }, { "Height", Height } };
 		await base.OnInitializedAsync();
 	}
 
