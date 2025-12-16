@@ -14,13 +14,13 @@
 </style>
 
 <RadzenSplitter Orientation="Radzen.Orientation.Horizontal" style="width: 98%;">
-	<RadzenSplitterPane Min="10px">
+	<RadzenSplitterPane Size="50%" Min="10px">
 		<StandaloneCodeEditor @ref="standaloneCodeEditor"
 							  CssClass="my-editor-class"
 							  OnDidInit="@OnInitAsync"
 							  ConstructionOptions="EditorConstructionOptions" />
 	</RadzenSplitterPane>
-	<RadzenSplitterPane Size="300px" Min="10px">
+	<RadzenSplitterPane Min="10px">
 		<StandaloneCodeEditor @ref="systemStandaloneCodeEditor"
 							  CssClass="my-editor-class"							  
 							  ConstructionOptions="EditorConstructionOptionsSystem" />

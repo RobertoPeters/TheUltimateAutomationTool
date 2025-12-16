@@ -14,6 +14,7 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
     public State? CurrentState { get; set; }
 
     private List<DateTime> _scheduledTimes = [];
+    private State? _errorState = null;
 
     public StateMachineHandler(Automation automation, IClientService clientService, IDataService dataService, IVariableService variableService, IMessageBusService messageBusService)
         : base(automation, clientService, dataService, variableService, messageBusService)
@@ -33,32 +34,44 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
         }
 
         _scheduledTimes.Add(DateTime.UtcNow);
-        if (CurrentState == null)
+        try
         {
-            ChangeState(scriptEngine, GetStartState());
-            return;
-        }
-        var transitions = _automationProperties.Transitions.Where(t => t.FromStateId == CurrentState.Id).ToList();
-        if (transitions.Count == 0)
-        {
-            RunningState = AutomationRunningState.Finished;
-            return;
-        }
-        foreach(var transition in transitions)
-        {
-            var result = scriptEngine.CallFunction<bool>(GetScriptTransitionMethodName(transition));
-            if (result)
+            if (CurrentState == null)
             {
-                var nextState = _automationProperties.States.First(s => s.Id == transition.ToStateId);
-                ChangeState(scriptEngine, nextState);
+                ChangeState(scriptEngine, GetStartState());
                 return;
             }
+            var transitions = _automationProperties.Transitions.Where(t => t.FromStateId == CurrentState.Id).ToList();
+            if (transitions.Count == 0)
+            {
+                RunningState = AutomationRunningState.Finished;
+                return;
+            }
+            foreach (var transition in transitions)
+            {
+                var result = scriptEngine.CallFunction<bool>(GetScriptTransitionMethodName(transition));
+                if (result)
+                {
+                    var nextState = _automationProperties.States.First(s => s.Id == transition.ToStateId);
+                    ChangeState(scriptEngine, nextState);
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            if (_errorState != null && CurrentState?.Id != _errorState.Id)
+            {
+                ChangeState(scriptEngine, _errorState);
+            }
+            throw;
         }
     }
 
     protected override void RunStart(IScriptEngine scriptEngine, Guid instanceId, List<AutomationInputVariable>? InputValues = null, int? topAutomationId = null)
     {
         CurrentState = null;
+        _errorState = _automationProperties.States.FirstOrDefault(s => s.IsErrorState);
         _scheduledTimes.Clear();
 
         var script = new StringBuilder();
