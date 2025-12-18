@@ -2,7 +2,7 @@
 
 namespace Tuat.Interfaces;
 
-public interface IClientService
+public interface IClientService: IAsyncDisposable
 {
     Task StartAsync();
     List<IClientHandler> GetClients();

@@ -18,6 +18,7 @@
   <Project Path="Tuat.HAClient/Tuat.HAClient.csproj" Id="1185cf49-de5f-401a-8c2d-590013e9fd7d" />
   <Project Path="Tuat.Helpers/Tuat.Helpers.csproj" Id="25c16fd4-de2e-4053-92ef-54a23c38ece0" />
   <Project Path="Tuat.Interfaces/Tuat.Interfaces.csproj" Id="b5ef0cef-4fd5-48ca-982a-3d552335245c" />
+  <Project Path="Tuat.LibraryEditor/Tuat.LibraryEditor.csproj" Id="24354f4a-e90c-40b6-91c2-555423d9a884" />
   <Project Path="Tuat.MessageBus/Tuat.MessageBus.csproj" Id="6c9f850e-2abc-4541-bad6-66790b6aaf9d" />
   <Project Path="Tuat.Models/Tuat.Models.csproj" Id="e641d196-48e4-4075-ad5a-0c45b49626af" />
   <Project Path="Tuat.MqttClient/Tuat.MqttClient.csproj" Id="ab88adfe-c341-4d48-b948-bfa977ee69fc" />

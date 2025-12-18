@@ -53,7 +53,7 @@ public static class Generic
                         List<TypeDisplayName> items = [];
                         foreach (var type in types)
                         {
-                            if (type.IsInterface || type.IsAbstract)
+                            if (!type.IsPublic  || type.IsInterface || type.IsAbstract)
                             {
                                 continue;
                             }
@@ -97,7 +97,7 @@ public static class Generic
                         List<TypeDisplayName> items = [];
                         foreach (var type in types)
                         {
-                            if (type.IsInterface || type.IsAbstract)
+                            if (!type.IsPublic || type.IsInterface || type.IsAbstract)
                             {
                                 continue;
                             }
@@ -150,7 +150,7 @@ public static class Generic
                         List<TypeDisplayName> items = [];
                         foreach (var type in types)
                         {
-                            if (type.IsInterface || type.IsAbstract)
+                            if (!type.IsPublic || type.IsInterface || type.IsAbstract)
                             {
                                 continue;
                             }

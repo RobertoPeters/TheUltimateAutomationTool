@@ -2,7 +2,7 @@
 
 namespace Tuat.Interfaces;
 
-public interface IVariableService
+public interface IVariableService: IDisposable
 {
     Task StartAsync();
     List<VariableInfo> GetVariables();

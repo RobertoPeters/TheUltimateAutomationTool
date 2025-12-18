@@ -138,7 +138,7 @@
 
 	async Task AddLibraryAsync()
 	{
-		var sm = await DialogService.ShowDialogAsync<AddOrEditLibraryDialog, Library>("Add Library", dialog => { });
+		var sm = await DialogService.ShowDialogAsync<Tuat.LibraryEditor.AddOrEditLibraryDialog, Library>("Add Library", dialog => { });
 		if (sm != null)
 		{
 			await DataService.AddOrUpdateLibraryAsync(sm);

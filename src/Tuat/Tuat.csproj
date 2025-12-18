@@ -38,6 +38,7 @@
 		<ProjectReference Include="..\Tuat.HAClient\Tuat.HAClient.csproj" />
 		<ProjectReference Include="..\Tuat.Helpers\Tuat.Helpers.csproj" />
 		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
+		<ProjectReference Include="..\Tuat.LibraryEditor\Tuat.LibraryEditor.csproj" />
 		<ProjectReference Include="..\Tuat.MessageBus\Tuat.MessageBus.csproj" />
 		<ProjectReference Include="..\Tuat.Models\Tuat.Models.csproj" />
 		<ProjectReference Include="..\Tuat.MqttClient\Tuat.MqttClient.csproj" />

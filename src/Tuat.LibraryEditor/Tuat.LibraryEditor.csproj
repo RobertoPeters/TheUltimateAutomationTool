@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+		<PackageReference Include="Radzen.Blazor" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="wwwroot\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Tuat.AutomationHelper\Tuat.AutomationHelper.csproj" />
+		<ProjectReference Include="..\Tuat.Clients\Tuat.Clients.csproj" />
+		<ProjectReference Include="..\Tuat.Data\Tuat.Data.csproj" />
+		<ProjectReference Include="..\Tuat.Dialogs\Tuat.Dialogs.csproj" />
+		<ProjectReference Include="..\Tuat.Helpers\Tuat.Helpers.csproj" />
+		<ProjectReference Include="..\Tuat.Interfaces\Tuat.Interfaces.csproj" />
+		<ProjectReference Include="..\Tuat.Variables\Tuat.Variables.csproj" />
+	</ItemGroup>
+
+</Project>

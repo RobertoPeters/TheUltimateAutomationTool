@@ -207,4 +207,9 @@ public class VariableService(IDataService _dataService, IMessageBusService _mess
             await _messageBusService.PublishAsync(removedVariables);
         }
     }
+
+    public void Dispose()
+    {
+        _semaphoreSlim.Dispose();
+    }
 }

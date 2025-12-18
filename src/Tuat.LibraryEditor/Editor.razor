@@ -1,0 +1,278 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Data
+@using Tuat.Dialogs
+@using Tuat.Interfaces
+@using Tuat.Models
+@inject IDataService DataService
+@inject IClientService ClientService
+@inject DialogService DialogService
+@inject IUIEventRegistration UIEventRegistration
+@implements IAsyncDisposable
+
+<span>Edit Library: @Library.Name (@(AutomationHandler?.RunningState.ToString() ?? "-"))</span>
+@if (!string.IsNullOrWhiteSpace(AutomationHandler?.ErrorMessage))
+{
+	<p>@AutomationHandler.ErrorMessage</p>
+}
+
+@if (ScriptEditorType != null)
+{
+	<div>
+		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Properties" Click="@EditLibraryAsync" />
+		<RadzenButton Size="ButtonSize.ExtraSmall" Text="Save" Click="@SaveAsync" />
+	</div>
+	<RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
+		<RadzenSplitterPane Size="75%" Min="300px">
+
+			<DynamicComponent @ref="scriptEditor" Type="ScriptEditorType" Parameters="EditorPropertiesParameters" />
+		</RadzenSplitterPane>
+		<RadzenSplitterPane Min="100px">
+			<RadzenTabs>
+				<Tabs>
+					<RadzenTabsItem Text="Variables">
+						@if (libraryTester?.DataService != null && libraryTester?.VariableService != null && libraryTester?.UIEventRegistration != null)
+						{
+							<VariablesControl Automation="Automation"
+											  AllowColumnPicking=false
+											  DataService="@libraryTester.DataService"
+											  VariableService="@libraryTester.VariableService"
+											  UIEventRegistration="@libraryTester.UIEventRegistration" />
+						}
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Locals">
+						<RadzenDataGrid @ref="variablesGrid"
+										AllowFiltering="true"
+										AllowColumnResize="true"
+										AllowAlternatingRows="false"
+										FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+										FilterMode="FilterMode.SimpleWithMenu"
+										AllowSorting="true"
+										PageSize="20"
+										Density="Density.Compact"
+										AllowPaging="true"
+										AllowVirtualization="true"
+										PagerHorizontalAlign="HorizontalAlign.Left"
+										ShowPagingSummary="true"
+										Data="scriptVariables">
+							<Columns>
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Name)" Title="Name" />
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Value)" Title="Type" Filterable="false">
+									<Template Context="variable">
+										@(variable.Value?.GetType())
+									</Template>
+								</RadzenDataGridColumn>
+								<RadzenDataGridColumn TItem="IScriptEngine.ScriptVariable" Property="@nameof(IScriptEngine.ScriptVariable.Value)" Title="Value" Filterable="false" />
+							</Columns>
+						</RadzenDataGrid>
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Intermediate">
+						<div style="position: relative;">
+							<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+								<RadzenButton Size="ButtonSize.Small" Text="Execute" Click="@ExecuteInteractive" Disabled="@(string.IsNullOrWhiteSpace(executeCommand) || AutomationHandler?.RunningState != AutomationRunningState.Active)" />
+							</div>
+							<RadzenTextArea @bind-Value=@executeCommand Style=@($"width:100%;") Rows="2" Placeholder="interactive script execution" />
+							<div>
+								<pre>@executeCommandResult</pre>
+							</div>
+						</div>
+					</RadzenTabsItem>
+					<RadzenTabsItem Text="Log">
+						<div style="position: relative;">
+							<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+								<RadzenButton Size="ButtonSize.Small" Text="Clear" Click="@ClearLog" />
+								<RadzenButton Size="ButtonSize.Small" Text="@(_pauseLog ? "Continue" : "Pause")" Click="@PauseLog" />
+							</div>
+							<div style="width: 100%;height: 150px;border: 1px solid black; overflow: scroll">
+								@foreach (var data in logLines)
+								{
+									<pre style="margin:0px;padding:0px;">@($"{data.Time.ToString("HH:mm.ss.fff")} {data.Message}")</pre>
+								}
+							</div>
+						</div>
+					</RadzenTabsItem>
+				</Tabs>
+			</RadzenTabs>
+		</RadzenSplitterPane>
+	</RadzenSplitter>
+}
+
+@code {
+	[Parameter]
+	public int Id { get; set; }
+
+	private sealed class LogData
+	{
+		public string Message { get; set; } = string.Empty;
+		public DateTime Time { get; set; } = DateTime.Now;
+	}
+
+	Library Library = null!;
+	Type? ScriptEditorType = null;
+	Dictionary<string, object?>? EditorPropertiesParameters;
+	DynamicComponent? scriptEditor;
+	string? _unsavedData = null;
+	RadzenDataGrid<IScriptEngine.ScriptVariable>? variablesGrid;
+	List<IScriptEngine.ScriptVariable> scriptVariables = new();
+	Automation? Automation = null;
+	IAutomationHandler? AutomationHandler;
+	readonly List<LogData> logLines = [];
+	string? executeCommand;
+	string? executeCommandResult;
+	bool _pauseLog;
+	Sandbox.LibraryTester? libraryTester;
+
+	protected override async Task OnInitializedAsync()
+	{
+		Library = DataService.GetLibraries().First(x => x.Id == Id);
+		UIEventRegistration.LibraryChanged += LibraryChanged;
+		_unsavedData = Library.Script ?? "";
+		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", Library.Script ?? "" }, { "SystemScript", GetSystemScript() }, { "Height", "85vh" } };
+		ScriptEditorType = Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.TypeName == Library.ScriptType)?.EditorComponentType;
+		await CreateLibraryTesterAsync();
+		await base.OnInitializedAsync();
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await DisposeLibraryTesterAsync();
+		UIEventRegistration.LibraryChanged -= LibraryChanged;
+	}
+
+	async Task CreateLibraryTesterAsync()
+	{
+		await DisposeLibraryTesterAsync();
+		libraryTester = new Sandbox.LibraryTester(DataService);
+		await libraryTester.StartAsync(Library);
+		AutomationHandler = libraryTester.AutomationHandler;
+		Automation = AutomationHandler?.Automation;
+		UpdateAutomationState();
+	}
+
+	async Task DisposeLibraryTesterAsync()
+	{
+		if (libraryTester != null)
+		{
+			await libraryTester.DisposeAsync();
+			libraryTester = null;
+			AutomationHandler = null;
+			Automation = null;
+		}
+	}
+
+	string GetSystemScript()
+	{
+		using (var scriptEngine = GetScriptEngine())
+		{
+			var additionalScript = Tuat.Helpers.LibraryScriptGenerator.GenerateScriptCode(DataService, null, Library.IncludeScriptIds);
+			return scriptEngine.GetSystemScript(ClientService, additionalScript: additionalScript);
+		}
+	}
+
+	IScriptEngine GetScriptEngine()
+	{
+		var type = Tuat.Helpers.Generics.Generic.ComponentType(Library.ScriptType)!;
+		return (IScriptEngine?)Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, null)!;
+	}
+
+	async void LibraryChanged(object? sender, Library library)
+	{
+		if (library.Id != Id)
+		{
+			return;
+		}
+		_unsavedData = Library.Script;
+		await ((IScriptEditor)scriptEditor!.Instance!).SetScriptAsync(Library.Script, GetSystemScript());
+		await CreateLibraryTesterAsync();
+	}
+
+	async Task EditLibraryAsync()
+	{
+		var sm = await DialogService.ShowDialogAsync<AddOrEditLibraryDialog, Library>("Add Library", dialog => { dialog.Library = Library; });
+		if (sm != null)
+		{
+			await DataService.AddOrUpdateLibraryAsync(sm);
+		}
+	}
+
+	async Task SaveAsync()
+	{
+		Library.Script = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		_unsavedData = Library.Script;
+		await DataService.AddOrUpdateLibraryAsync(Library);
+	}
+
+	public async Task<bool> TextChanged()
+	{
+		var currentData = await ((IScriptEditor)scriptEditor!.Instance!).GetScriptAsync() ?? "";
+		return (_unsavedData != currentData);
+	}
+
+	void ClearLog()
+	{
+		InvokeAsync(() =>
+		{
+			logLines.Clear();
+			StateHasChanged();
+		});
+	}
+
+	void PauseLog()
+	{
+		_pauseLog = !_pauseLog;
+	}
+
+	void ExecuteInteractive()
+	{
+		if (!string.IsNullOrWhiteSpace(executeCommand))
+		{
+			executeCommandResult = null;
+			if (AutomationHandler?.RunningState == AutomationRunningState.Active)
+			{
+				executeCommandResult = AutomationHandler.ExecuteScript(executeCommand);
+			}
+			else
+			{
+				executeCommandResult = "error: script not active";
+			}
+			UpdateAutomationState();
+		}
+	}
+
+	void UpdateAutomationState()
+	{
+		if (AutomationHandler == null)
+		{
+			return;
+		}
+
+		InvokeAsync(() =>
+		{
+			bool needsReload = false;
+			var updatedScriptVariables = AutomationHandler.GetScriptVariables();
+			foreach (var updatedVar in updatedScriptVariables)
+			{
+				var existingVar = scriptVariables.FirstOrDefault(v => v.Name == updatedVar.Name);
+				if (existingVar != null)
+				{
+					existingVar.Value = updatedVar.Value;
+				}
+				else
+				{
+					scriptVariables.Add(updatedVar);
+					needsReload = true;
+				}
+			}
+			if (needsReload)
+			{
+				variablesGrid?.Reload();
+			}
+			else
+			{
+				variablesGrid?.RefreshDataAsync();
+			}
+			StateHasChanged();
+		});
+
+	}
+}

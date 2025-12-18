@@ -113,5 +113,14 @@ public class ClientService(IDataService _dataService, IVariableService _variable
         }
         return clientHandler;
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach(var handler in _handlers.Values)
+        {
+            await handler.DisposeAsync();
+        }
+        _handlers.Clear();
+    }
 }
 
