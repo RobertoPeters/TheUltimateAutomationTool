@@ -105,7 +105,7 @@
 	{
 		if (library.Id < 0)
 		{
-			libraries!.RemoveAll(x => x.Id == -library.Id);
+			libraries!.RemoveAll(x => x.Id == -library.Id || x.Id == library.Id);
 		}
 		else
 		{
