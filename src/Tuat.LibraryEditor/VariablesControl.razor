@@ -64,7 +64,6 @@
                                     AllowClear="true"
                                     TextProperty="Name"
                                     ValueProperty="Id"
-                                    Disabled="@(Client != null)"
                                     Change="@grid!.Reload"
                                     @bind-Value=@filterClient />
                 </FilterTemplate>
@@ -127,19 +126,15 @@
 
 @code {
     [Parameter]
-    public Client? Client { get; set; }
+    public Sandbox.LibraryTester LibraryTester { get; set; } = null!;
 
-    [Parameter]
-    public Automation? Automation { get; set; }
+    public Automation Automation => LibraryTester.AutomationHandler!.Automation;
 
-    [Parameter]
-    public IDataService DataService { get; set; } = null!;
+    public IDataService DataService => LibraryTester.DataService!;
 
-    [Parameter]
-    public IVariableService VariableService { get; set; } = null!;
+    public IVariableService VariableService => LibraryTester.VariableService!;
 
-    [Parameter]
-    public IUIEventRegistration UIEventRegistration { get; set; } = null!;
+    public IUIEventRegistration UIEventRegistration => LibraryTester.UIEventRegistration!;
 
     [Parameter]
     public bool AllowColumnPicking { get; set; } = true;
@@ -152,26 +147,52 @@
     private List<VariableInfo>? gridData;
     private int? filterClient = null;
     private int? filterAutomation = null;
+    private IUIEventRegistration? activeUIEventRegistration = null;
+    private bool isInitialized = false;
+    private Guid activeLibraryTesterId = Guid.Empty;
 
     protected override void OnInitialized()
+    {
+        SetupComponent();
+        isInitialized = true;
+        base.OnInitialized();
+    }
+
+    private void SetupComponent()
     {
         clients = new ConcurrentDictionary<int, Client>(DataService.GetClients().ToDictionary(x => x.Id, x => x));
         automations = new ConcurrentDictionary<int, Automation>(DataService.GetAutomations().ToDictionary(x => x.Id, x => x));
         variables = new ConcurrentDictionary<int, VariableInfo>(VariableService.GetVariables().ToDictionary(x => x.Variable.Id, x => x));
         gridData = variables.Values.ToList();
-        if (Client != null)
-        {
-            filterClient = Client.Id;
-        }
         if (Automation != null)
         {
             filterAutomation = Automation.Id;
         }
+
         UIEventRegistration.VariablesChanged += VariablesChanged;
         UIEventRegistration.VariableValuesChanged += VariableValuesChanged;
         UIEventRegistration.ClientHandlerChanged += ClientHandlerChanged;
         UIEventRegistration.AutomationHandlerChanged += AutomationHandlerChanged;
-        base.OnInitialized();
+        activeLibraryTesterId = LibraryTester.Id;
+        activeUIEventRegistration = UIEventRegistration;
+    }
+
+    private void UnregisterEvents()
+    {
+        activeUIEventRegistration?.VariableValuesChanged -= VariableValuesChanged;
+        activeUIEventRegistration?.AutomationHandlerChanged -= AutomationHandlerChanged;
+        activeUIEventRegistration?.ClientHandlerChanged -= ClientHandlerChanged;
+        activeUIEventRegistration?.VariablesChanged += VariablesChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (isInitialized && activeLibraryTesterId != LibraryTester.Id)
+        {
+            UnregisterEvents();
+            SetupComponent();
+        }
+        base.OnParametersSet();
     }
 
     private void UpdateGridData()
@@ -276,9 +297,6 @@
 
     public void Dispose()
     {
-        UIEventRegistration.VariableValuesChanged -= VariableValuesChanged;
-        UIEventRegistration.AutomationHandlerChanged -= AutomationHandlerChanged;
-        UIEventRegistration.ClientHandlerChanged -= ClientHandlerChanged;
-        UIEventRegistration.VariablesChanged += VariablesChanged;
+        UnregisterEvents();
     }
 }

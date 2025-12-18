@@ -3,7 +3,7 @@ using Tuat.Models;
 
 namespace Tuat.LibraryEditor.Sandbox;
 
-internal class LibraryTester(IDataService _realDataService) : IAsyncDisposable
+public class LibraryTester(IDataService _realDataService) : IAsyncDisposable
 {
     private IAutomationHandler? _automationHandler;
     private IMessageBusService? _messageBusService;
@@ -16,6 +16,8 @@ internal class LibraryTester(IDataService _realDataService) : IAsyncDisposable
     public IDataService? DataService => _dataService;
     public IVariableService? VariableService => _variableService;
     public IUIEventRegistration? UIEventRegistration => _uiEventRegistration;
+    public IClientService? ClientService => _clientService;
+    public Guid Id { get; } = Guid.NewGuid();
 
     public async Task StartAsync(Library library)
     {

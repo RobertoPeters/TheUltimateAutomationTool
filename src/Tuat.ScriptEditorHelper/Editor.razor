@@ -84,7 +84,7 @@
 		}
 		scriptStartPosition = result.ToString().Length;
 		systemScriptLength = lines.Count();
-		result.AppendLine(Script?.Trim());
+		result.AppendLine(Script?.Trim(' ', '\r', '\n'));
 
 		return result.ToString();
 	}
@@ -112,7 +112,7 @@
 
 	public async Task SetScriptAsync(string? text, string? systemScript)
 	{
-		Script = text?.Trim() ?? "";
+		Script = text?.Trim(' ', '\r', '\n') ?? "";
 		SystemScript = systemScript;
 		await standaloneCodeEditor!.SetValue(GetEditorContent());
 		await HideSystemLinesAsync();

@@ -33,11 +33,8 @@
 					<RadzenTabsItem Text="Variables">
 						@if (libraryTester?.DataService != null && libraryTester?.VariableService != null && libraryTester?.UIEventRegistration != null)
 						{
-							<VariablesControl Automation="Automation"
-											  AllowColumnPicking=false
-											  DataService="@libraryTester.DataService"
-											  VariableService="@libraryTester.VariableService"
-											  UIEventRegistration="@libraryTester.UIEventRegistration" />
+							<VariablesControl LibraryTester="libraryTester"
+											  AllowColumnPicking=false />
 						}
 					</RadzenTabsItem>
 					<RadzenTabsItem Text="Locals">
@@ -146,6 +143,7 @@
 		await libraryTester.StartAsync(Library);
 		AutomationHandler = libraryTester.AutomationHandler;
 		Automation = AutomationHandler?.Automation;
+		libraryTester.UIEventRegistration?.LogEntryAdded += LogEvent;
 		UpdateAutomationState();
 	}
 
@@ -153,11 +151,27 @@
 	{
 		if (libraryTester != null)
 		{
+			libraryTester.UIEventRegistration?.LogEntryAdded -= LogEvent;
 			await libraryTester.DisposeAsync();
 			libraryTester = null;
 			AutomationHandler = null;
 			Automation = null;
 		}
+	}
+
+	void LogEvent(object? sender, LogEntry logEntry)
+	{
+		if (_pauseLog) return;
+
+		InvokeAsync(() =>
+		{
+			logLines.Add(new LogData() { Message = logEntry.Message, Time = logEntry.Timestamp.ToLocalTime() });
+			while (logLines.Count > 200)
+			{
+				logLines.RemoveAt(0);
+			}
+			StateHasChanged();
+		});
 	}
 
 	string GetSystemScript()
