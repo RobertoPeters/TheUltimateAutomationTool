@@ -16,6 +16,14 @@ internal class MessageBusService(LibraryTester _libraryTester) : IMessageBusServ
                     }
                     _libraryTester.UIEventRegistration?.Handle(variableInfos);
                 }
+                else if (message is VariableInfo variableInfo)
+                {
+                    if (_libraryTester.ClientService != null)
+                    {
+                        await _libraryTester.ClientService.Handle([variableInfo]);
+                    }
+                    _libraryTester.UIEventRegistration?.Handle([variableInfo]);
+                }
                 else if (message is List<VariableValueInfo> variableValueInfos)
                 {
                     _libraryTester.UIEventRegistration?.Handle(variableValueInfos);
