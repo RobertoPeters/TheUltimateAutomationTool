@@ -44,7 +44,20 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
             var transitions = _automationProperties.Transitions.Where(t => t.FromStateId == CurrentState.Id).ToList();
             if (transitions.Count == 0)
             {
-                RunningState = AutomationRunningState.Finished;
+                List<AutomationOutputVariable> outputVariables = [];
+                if (Automation.SubAutomationParameters?.Any(x => x.IsOutput) == true)
+                {
+                    var scriptVariables = scriptEngine.GetScriptVariables();
+                    var subAutomationParameters = Automation.SubAutomationParameters
+                            .Where(x => x.IsOutput)
+                            .ToList();
+                    foreach (var subStateVariable in subAutomationParameters)
+                    {
+                        var scriptVariable = scriptVariables.FirstOrDefault(x => x.Name == subStateVariable.ScriptVariableName)?.Value;
+                        outputVariables.Add(new AutomationOutputVariable() { Name = subStateVariable.Name, Value = scriptVariable });
+                    }
+                }
+                SetAutomationFinished(outputVariables);
                 return;
             }
             foreach (var transition in transitions)
