@@ -31,7 +31,7 @@
 			<RadzenTabs>
 				<Tabs>
 					<RadzenTabsItem Text="Variables">
-						@if (libraryTester?.DataService != null && libraryTester?.VariableService != null && libraryTester?.UIEventRegistration != null)
+						@if (libraryTester?.DataService != null && libraryTester?.VariableService != null && libraryTester?.UIEventRegistration != null && libraryTester?.AutomationHandler?.Automation != null)
 						{
 							<VariablesControl LibraryTester="libraryTester"
 											  AllowColumnPicking=false />
