@@ -4,6 +4,8 @@ An automation tool for Home Automation controllers (Home Assistant, Homey etc.).
 This application simplifies automations by providing different kind of automation methods and different kind of scripting languages. Automations can call other automations (sub automations).
 Documentation on this application (installation and usage) can be found in the wiki (https://github.com/RobertoPeters/TheUltimateAutomationTool/wiki)
 
+Check out the TUAT Video Channel on youtube (https://www.youtube.com/channel/UCqv-Tf5SnPZXOgMJXbOAtNw)
+
 ## Supported scripting languages
 - JavaScript
 - C#
