@@ -25,8 +25,8 @@ public class StateMachineHandler : BaseAutomationHandler<AutomationProperties>, 
     {
         //check cooling down
         //if there is a loop with pass through transitions, it can cause high CPU usage
-        //for now: maximum of 10 runs in 2 seconds
-        var scheduleWindow = DateTime.UtcNow.AddSeconds(-2);
+        //for now: maximum of 10 runs in 1 second
+        var scheduleWindow = DateTime.UtcNow.AddSeconds(-1);
         _scheduledTimes = _scheduledTimes.Where(t => t > scheduleWindow).ToList();
         if (_scheduledTimes.Count > 10)
         {
