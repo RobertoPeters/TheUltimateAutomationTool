@@ -107,7 +107,11 @@ public class StepExecuteOnClient: Step
                 inputActive = payloads!.Any(x => x.IsTrue() == true);
             }
 
-            if (inputActive && !activeHasBeenHandled)
+            if (!inputActive && activeHasBeenHandled)
+            {
+                activeHasBeenHandled = false;
+            }
+            else if (inputActive && !activeHasBeenHandled)
             {
                 activeHasBeenHandled = true;
                 if (variableId == null && !string.IsNullOrWhiteSpace(VariableName))

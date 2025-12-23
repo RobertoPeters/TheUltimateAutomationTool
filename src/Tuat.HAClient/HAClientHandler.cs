@@ -3,6 +3,7 @@ using HassClient.Models;
 using HassClient.WS;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Dynamic;
 using Tuat.Interfaces;
 using Tuat.Models;
 
@@ -32,11 +33,11 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
     }
 
     public List<(string methodName, bool isAutomationVariable, bool persistant, string description, string example)> CreateVariableOnClientMethods() =>
-        [       
+        [
             ("createHAVariable", true, true, "Create a Home Assistent entity variable with data as entity name. Return value is id of variable", "createHAVariable('kitchenLight', 'light.my_light')"),
         ];
 
-    public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() => 
+    public List<(string methodName, string command, string description, string example)> CreateExecuteOnClientMethods() =>
         [
             ("haClientCallService", "callservice", "Call Home Assistent service.", """haClientCallService(null, 'light', 'turn_on', { "entity_id": "light.my_light", "brightness_pct": 20})")"""),
             ("haClientCallServiceForEntities", "callserviceforentities", "Call Home Assistent service for entities.", """haClientCallService(null, 'light', 'turn_off', [ "light.my_light" ])")"""),
@@ -104,6 +105,17 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
             case "callservice":
                 if (parameter1 != null && parameter2 != null)
                 {
+                    if (parameter3 is string strData)
+                    {
+                        try
+                        {
+                            parameter3 = Newtonsoft.Json.JsonConvert.DeserializeAnonymousType(strData.Replace('\'', '"'), new ExpandoObject());
+                        }
+                        catch
+                        {
+                            //ignore
+                        }
+                    }
                     result = await CallServiceAsync(parameter1.ToString()!, parameter2.ToString()!, parameter3);
                 }
                 break;
@@ -327,9 +339,9 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
             _variables.TryAdd(variable.Variable.Data!, variableList);
         }
         variableList.Add(variable);
-        if (variableList.Count == 1)
+        if (_wsApi != null)
         {
-            if (_wsApi != null)
+            if (variableList.Count == 1)
             {
                 try
                 {
@@ -348,6 +360,14 @@ public class HAClientHandler(Client _client, IVariableService _variableService, 
                 catch
                 {
                     //nothing
+                }
+            }
+            else
+            {
+                var other = variableList.FirstOrDefault(x => x.Variable.Id != variable.Variable.Id);
+                if (other != null)
+                {
+                    await _variableService.SetVariableValuesAsync([(variableId: variable.Variable.Id, value: other.VariableValue.Value)]);
                 }
             }
         }
