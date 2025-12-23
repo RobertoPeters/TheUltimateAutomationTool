@@ -187,13 +187,25 @@
 
     private void VariableValuesChanged(object? sender, List<VariableValueInfo> variablesInfos)
     {
+        var updateNeeded = false;
         foreach (var variable in variablesInfos)
         {
+            if (!this.variables.ContainsKey(variable.Variable.Id))
+            {
+                updateNeeded = true;
+            }
             this.variables.AddOrUpdate(variable.Variable.Id, variable, (_, _) => variable);
         }
         InvokeAsync(() =>
         {
-            grid?.Reload();
+            if (updateNeeded)
+            {
+                UpdateGridData();
+            }
+            else
+            {
+                grid?.Reload();
+            }
         });
     }
 

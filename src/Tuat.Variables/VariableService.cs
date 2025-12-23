@@ -3,6 +3,7 @@ using System.Threading;
 using Tuat.Extensions;
 using Tuat.Interfaces;
 using Tuat.Models;
+using Wolverine;
 
 namespace Tuat.Variables;
 
@@ -61,7 +62,10 @@ public class VariableService(IDataService _dataService, IMessageBusService _mess
             {
                 variableInfo.MockingValue = mockingValue;
                 variableInfo.IsMocking = isMocking;
-                updatedVariables.Add(variableInfo.CopyObjectToOtherType<VariableInfo, VariableValueInfo>()!);
+                var cpy = variableInfo.CopyObjectToOtherType<VariableInfo, VariableValueInfo>()!;
+                cpy.Variable.Id = variableInfo.Variable.Id;
+                cpy.VariableValue.Id = variableInfo.VariableValue.Id;
+                updatedVariables.Add(cpy);
             }
         }
         if (updatedVariables.Any())
@@ -81,7 +85,10 @@ public class VariableService(IDataService _dataService, IMessageBusService _mess
                 variableInfo.VariableValue.Value = value;
                 variableInfo.VariableValue.Update = DateTime.UtcNow;
                 await _dataService.AddOrUpdateVariableValueAsync(variableInfo.VariableValue);
-                updatedVariables.Add(variableInfo.CopyObjectToOtherType<VariableInfo, VariableValueInfo>()!);
+                var cpy = variableInfo.CopyObjectToOtherType<VariableInfo, VariableValueInfo>()!;
+                cpy.Variable.Id = variableInfo.Variable.Id;
+                cpy.VariableValue.Id = variableInfo.VariableValue.Id;
+                updatedVariables.Add(cpy);
             }
         }
         if (updatedVariables.Any())
