@@ -65,11 +65,15 @@ public class StepSubAutomation : Step
                 }
             }
         }
-        else if (subAutomationRunning)
+        else
         {
-            instance.StopSubAutomation();
             subAutomationStarted = false;
-            subAutomationRunning = false;
+
+            if (subAutomationRunning)
+            {
+                instance.StopSubAutomation();
+                subAutomationRunning = false;
+            }
         }
 
         if (Payloads[0].UpdateData(result ? true : null))
