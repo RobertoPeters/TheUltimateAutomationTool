@@ -1,0 +1,42 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@using Tuat.Interfaces
+@using Tuat.Models
+@implements IAIProviderSettings
+
+<RadzenFormField Text="Host *" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenTextBox @bind-Value="@providerProperties!.OllamaApiUrl" Name="OllamaApiUrl" Placeholder="http://localhost:11434" spellcheck="false" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="OllamaApiUrl" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+<RadzenFormField Text="Model" Variant="@Variant.Outlined">
+	<ChildContent>
+		<RadzenPassword @bind-Value="@providerProperties!.Model" Name="Token" />
+	</ChildContent>
+	<Helper>
+		<RadzenRequiredValidator Component="Model" Text="This field is required" />
+	</Helper>
+</RadzenFormField>
+
+@code {
+	[Parameter]
+	public AIProvider Model { get; set; } = null!;
+
+	private ProviderProperties providerProperties = new();
+
+	public string? GetProviderPropertiesData() => System.Text.Json.JsonSerializer.Serialize(providerProperties);
+
+	protected override void OnInitialized()
+	{
+		if (!string.IsNullOrWhiteSpace(Model.Settings))
+		{
+			providerProperties = System.Text.Json.JsonSerializer.Deserialize<ProviderProperties>(Model.Settings) ?? new();
+		}
+		base.OnInitialized();
+	}
+
+}
+

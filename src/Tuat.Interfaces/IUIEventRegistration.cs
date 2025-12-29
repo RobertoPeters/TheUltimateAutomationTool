@@ -13,6 +13,7 @@ public interface IUIEventRegistration
     event EventHandler<AutomationStateInfo>? AutomationStateInfoChanged;
     event EventHandler<AutomationTriggered>? AutomationTriggered;
     event EventHandler<Library>? LibraryChanged;
+    event EventHandler<AIProvider>? AIProviderChanged;
 
     void Handle(ClientHandlerInfo clientHandler);
     void Handle(AutomationHandlerInfo automationHandler);
@@ -23,4 +24,5 @@ public interface IUIEventRegistration
     void Handle(AutomationStateInfo automationStateInfo);
     void Handle(AutomationTriggered automationTriggered);
     void Handle(Library library);
+    void Handle(AIProvider aIProvider);
 }

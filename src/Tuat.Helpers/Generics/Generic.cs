@@ -175,4 +175,48 @@ public static class Generic
         }
     }
 
+    private static List<TypeDisplayName> _aiProviderTypeDisplayNames = null!;
+    public static List<TypeDisplayName> AIProviderTypeDisplayNames
+    {
+        get
+        {
+            if (_aiProviderTypeDisplayNames == null)
+            {
+                lock (_lockObject)
+                {
+                    if (_aiProviderTypeDisplayNames == null)
+                    {
+                        var interfaceType = typeof(Tuat.Interfaces.IAIProvider);
+                        var types = AppDomain.CurrentDomain.GetAssemblies()
+                            .SelectMany(s => s.GetTypes())
+                            .Where(p => interfaceType.IsAssignableFrom(p));
+
+                        List<TypeDisplayName> items = [];
+                        foreach (var type in types)
+                        {
+                            if (!type.IsPublic || type.IsInterface || type.IsAbstract)
+                            {
+                                continue;
+                            }
+
+                            var attribute = type.GetAttribute<System.ComponentModel.DisplayNameAttribute>();
+                            var editorControl = type.GetAttribute<System.ComponentModel.EditorAttribute>();
+                            items.Add(new TypeDisplayName
+                            {
+                                TypeName = type.FullName!,
+                                Type = type,
+                                DisplayName = attribute != null ? attribute.DisplayName : type.Name,
+                                SettingsEditorType = editorControl?.EditorTypeName,
+                                SettingsEditorComponentType = ComponentType(editorControl?.EditorTypeName)
+                            });
+                        }
+                        _aiProviderTypeDisplayNames = items.OrderBy(x => x.DisplayName).ToList();
+
+                    }
+                }
+            }
+            return _aiProviderTypeDisplayNames!;
+        }
+    }
+
 }

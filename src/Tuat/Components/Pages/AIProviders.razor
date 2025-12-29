@@ -1,0 +1,131 @@
+﻿@page "/aiproviders"
+@using System.Collections.Concurrent
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject Radzen.DialogService DialogService
+@inject IUIEventRegistration UIEventRegistration
+@inject IDataService DataService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>TUAT - AI Providers</PageTitle>
+
+<h1>AI Providers</h1>
+
+@if (aiProviders != null)
+{
+	<RadzenButton Text="Add" Click="@(() => AddOrEditClientAsync(null))" />
+	<RadzenDataGrid @ref="grid" AllowFiltering="true"
+					AllowColumnResize="true"
+					AllowAlternatingRows="false"
+					FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+					FilterMode="FilterMode.SimpleWithMenu"
+					AllowSorting="true"
+					PageSize="20"
+					Density="Density.Compact"
+					AllowPaging="true"
+					AllowVirtualization="true"
+					PagerHorizontalAlign="HorizontalAlign.Left"
+					ShowPagingSummary="true"
+					Data="@aiProviders"
+					TItem="AIProvider">
+		<Columns>
+			<RadzenDataGridColumn TItem="AIProvider"
+								  Property="@nameof(Library.Id)"
+								  Filterable="false"
+								  Sortable="false"
+								  Resizable="false"
+								  Width="96px"
+								  Title="">
+			</RadzenDataGridColumn>
+
+			<RadzenDataGridColumn TItem="AIProvider"
+								  Property="@nameof(Library.Id)"
+								  Title="Id" />
+
+			<RadzenDataGridColumn TItem="AIProvider"
+								  Property="@nameof(Library.Name)"
+								  Title="Name" />
+
+			<RadzenDataGridColumn TItem="AIProvider"
+								  Property="@nameof(AIProvider.ProviderType)"
+								  Filterable="false"
+								  Title="Type">
+				<Template Context="aiProvider">
+					@(Tuat.Helpers.Generics.Generic.AIProviderTypeDisplayNames.FirstOrDefault(x => x.TypeName == aiProvider.ProviderType)?.DisplayName)
+				</Template>
+			</RadzenDataGridColumn>
+
+
+			<RadzenDataGridColumn TItem="AIProvider"
+								  Filterable="false"
+								  Sortable="false"
+								  Property="@nameof(Library.Id)"
+								  Title="">
+				<Template Context="aiProvider">
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAIProviderAsync(aiProvider))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAIProviderAsync(aiProvider))" />
+				</Template>
+			</RadzenDataGridColumn>
+		</Columns>
+	</RadzenDataGrid>
+}
+
+@code {
+
+	List<AIProvider>? aiProviders = null;
+	RadzenDataGrid<AIProvider>? grid = null;
+
+	protected override void OnInitialized()
+	{
+		aiProviders = DataService.GetAIProviders();
+		UIEventRegistration.AIProviderChanged += AIProviderChanged;
+		base.OnInitialized();
+	}
+
+	public void Dispose()
+	{
+		UIEventRegistration.AIProviderChanged -= AIProviderChanged;
+	}
+
+	private void AIProviderChanged(object? sender, AIProvider aiProvider)
+	{
+		if (aiProvider.Id < 0)
+		{
+			aiProviders!.RemoveAll(x => x.Id == -aiProvider.Id || x.Id == aiProvider.Id);
+		}
+		else
+		{
+			var index = aiProviders!.FindIndex(x => x.Id == aiProvider.Id);
+			if (index >= 0)
+			{
+				aiProviders[index] = aiProvider;
+			}
+			else
+			{
+				aiProviders.Add(aiProvider);
+			}
+		}
+		InvokeAsync(grid!.Reload);
+		InvokeAsync(StateHasChanged);
+	}
+
+	async Task DeleteAIProviderAsync(AIProvider aiProvider)
+	{
+		if (await DialogService.ShowNoYesConfirmationDialogAsync("Delete AI Provider", $"Are you sure you want to delete the AI Provider '{aiProvider.Name}'?") == Dialogs.ConfirmationDialog.DialogButton.Yes)
+		{
+			await DataService.DeleteAIProviderAsync(aiProvider);
+		}
+	}
+
+	private async Task AddOrEditClientAsync(AIProvider? aiProvider)
+	{
+		await DialogService.ShowDialogAsync<AddOrEditAIProviderDialog>($"{(aiProvider == null ? "Add" : "Edit")} AI Provider", dialog =>
+		{
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
+			dialog.Id = aiProvider?.Id;
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
+		});
+	}
+}

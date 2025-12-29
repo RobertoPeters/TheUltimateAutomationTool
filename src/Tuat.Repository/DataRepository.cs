@@ -14,6 +14,7 @@ public class DataRepository(IConfiguration _configuration) : IRepository
     const string VariableValueTableName = "VariableValue";
     const string AutomationTableName = "Automation";
     const string LibraryTableName = "Library";
+    const string AIProviderTableName = "AIProvider";
 
     public async Task SetupAsync()
     {
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS {VariableTableName}(Id INTEGER PRIMARY KEY AUTOINCREM
 CREATE TABLE IF NOT EXISTS {AutomationTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
+CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 ";
         await command.ExecuteNonQueryAsync();
         await command.DisposeAsync();
@@ -58,6 +60,11 @@ CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREME
         return await GetItemsAsync<VariableValue>(VariableValueTableName);
     }
 
+    public async Task<List<AIProvider>> GetAIProvidersAsync()
+    {
+        return await GetItemsAsync<AIProvider>(AIProviderTableName);
+    }
+
     public async Task AddClientAsync(Client client)
     {
         await AddItemAsync(ClientTableName, client);
@@ -83,6 +90,11 @@ CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREME
         await AddItemAsync(VariableValueTableName, variableValue);
     }
 
+    public async Task AddAIProviderAsync(AIProvider aIProvider)
+    {
+        await AddItemAsync(AIProviderTableName, aIProvider);
+    }
+
     public async Task UpdateClientAsync(Client client)
     {
         await UpdateItemAsync(ClientTableName, client);
@@ -106,6 +118,11 @@ CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREME
     public async Task UpdateVariableValueAsync(VariableValue variableValue)
     {
         await UpdateItemAsync(VariableValueTableName, variableValue);
+    }
+
+    public async Task UpdateAIProviderAsync(AIProvider aIProvider)
+    {
+        await UpdateItemAsync(AIProviderTableName, aIProvider);
     }
 
     public async Task DeleteClientAsync(Client client)
@@ -141,6 +158,11 @@ CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREME
     public async Task DeleteVariableValuesAsync(List<int> ids)
     {
         await DeleteItemsAsync(VariableValueTableName, ids);
+    }
+
+    public async Task DeleteAIProviderAsync(AIProvider aIProvider)
+    {
+        await DeleteItemAsync(AIProviderTableName, aIProvider);
     }
 
     private async Task<T> AddItemAsync<T>(string tableName, T item) where T : ModelBase

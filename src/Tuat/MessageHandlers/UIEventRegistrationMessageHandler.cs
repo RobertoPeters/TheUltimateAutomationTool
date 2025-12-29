@@ -51,5 +51,10 @@ public static class UIEventRegistrationMessageHandler
     {
         uiEventRegistration.Handle(library);
     }
+
+    public static void Handle(Models.AIProvider aIProvider, IUIEventRegistration uiEventRegistration)
+    {
+        uiEventRegistration.Handle(aIProvider);
+    }
 }
 
