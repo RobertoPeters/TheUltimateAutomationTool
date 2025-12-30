@@ -1,0 +1,133 @@
+﻿@page "/aiconversations"
+@using System.Collections.Concurrent
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject Radzen.DialogService DialogService
+@inject IUIEventRegistration UIEventRegistration
+@inject IDataService DataService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>TUAT - AI Conversations</PageTitle>
+
+<h1>AI Conversations</h1>
+
+@if (aiConversations != null)
+{
+	<RadzenButton Text="Add" Click="@(() => AddOrEditConversationAsync(null))" />
+	<RadzenDataGrid @ref="grid" AllowFiltering="true"
+					AllowColumnResize="true"
+					AllowAlternatingRows="false"
+					FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+					FilterMode="FilterMode.SimpleWithMenu"
+					AllowSorting="true"
+					PageSize="20"
+					Density="Density.Compact"
+					AllowPaging="true"
+					AllowVirtualization="true"
+					PagerHorizontalAlign="HorizontalAlign.Left"
+					ShowPagingSummary="true"
+					Data="@aiConversations"
+					TItem="AIConversation">
+		<Columns>
+			<RadzenDataGridColumn TItem="AIConversation"
+								  Property="@nameof(AIConversation.Id)"
+								  Title="Id" />
+
+			<RadzenDataGridColumn TItem="AIConversation"
+								  Property="@nameof(AIConversation.Name)"
+								  Title="Name" />
+
+			<RadzenDataGridColumn TItem="AIConversation"
+								  Property="@nameof(AIConversation.DefaultAIProviderId)"
+								  Filterable="false"
+								  Title="Default provider">
+				<Template Context="aiConversation">
+					@(aiProviders?.FirstOrDefault(y => y.Id == aiConversation.DefaultAIProviderId)?.Name)
+				</Template>
+			</RadzenDataGridColumn>
+
+
+			<RadzenDataGridColumn TItem="AIConversation"
+								  Filterable="false"
+								  Sortable="false"
+								  Property="@nameof(Library.Id)"
+								  Title="">
+				<Template Context="aiConversation">
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.ExtraSmall" Text="Edit" Click="@(() => AddOrEditConversationAsync(aiConversation))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAIConversationAsync(aiConversation))" />
+				</Template>
+			</RadzenDataGridColumn>
+		</Columns>
+	</RadzenDataGrid>
+}
+
+@code {
+
+	List<AIConversation>? aiConversations = null;
+	List<AIProvider>? aiProviders = null;
+	RadzenDataGrid<AIConversation>? grid = null;
+
+	protected override void OnInitialized()
+	{
+		aiConversations = DataService.GetAIConversations();
+		aiProviders = DataService.GetAIProviders();
+		UIEventRegistration.AIConversationChanged += AIConversationChanged;
+		UIEventRegistration.AIProviderChanged += AIProviderChanged;
+		base.OnInitialized();
+	}
+
+	public void Dispose()
+	{
+		UIEventRegistration.AIProviderChanged -= AIProviderChanged;
+		UIEventRegistration.AIConversationChanged -= AIConversationChanged;
+	}
+
+	private void AIProviderChanged(object? sender, AIProvider aiProvider)
+	{
+		aiProviders = DataService.GetAIProviders();
+		InvokeAsync(grid!.Reload);
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void AIConversationChanged(object? sender, AIConversation aiConversation)
+	{
+		if (aiConversation.Id < 0)
+		{
+			aiConversations!.RemoveAll(x => x.Id == -aiConversation.Id || x.Id == aiConversation.Id);
+		}
+		else
+		{
+			var index = aiConversations!.FindIndex(x => x.Id == aiConversation.Id);
+			if (index >= 0)
+			{
+				aiConversations[index] = aiConversation;
+			}
+			else
+			{
+				aiConversations.Add(aiConversation);
+			}
+		}
+		InvokeAsync(grid!.Reload);
+		InvokeAsync(StateHasChanged);
+	}
+
+	async Task DeleteAIConversationAsync(AIConversation aiConversation)
+	{
+		if (await DialogService.ShowNoYesConfirmationDialogAsync("Delete AI Conversation", $"Are you sure you want to delete the AI Conversation '{aiConversation.Name}'?") == Dialogs.ConfirmationDialog.DialogButton.Yes)
+		{
+			await DataService.DeleteAIConversationAsync(aiConversation);
+		}
+	}
+
+	private async Task AddOrEditConversationAsync(AIConversation? aiConversation)
+	{
+		await DialogService.ShowDialogAsync<AddOrEditAIConversationDialog>($"{(aiConversation == null ? "Add" : "Edit")} AI Conversation", dialog =>
+		{
+#pragma warning disable BL0005 // Component parameter should not be set outside of its component.
+			dialog.Id = aiConversation?.Id;
+#pragma warning restore BL0005 // Component parameter should not be set outside of its component.
+		});
+	}
+}

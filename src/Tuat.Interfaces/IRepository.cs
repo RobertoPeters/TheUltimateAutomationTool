@@ -10,18 +10,21 @@ public interface IRepository
     Task<List<VariableValue>> GetVariableValuesAsync();
     Task<List<Library>> GetLibrariesAsync();
     Task<List<AIProvider>> GetAIProvidersAsync();
+    Task<List<AIConversation>> GetAIConversationsAsync();
     Task AddClientAsync(Client client);
     Task AddVariableAsync(Variable variable);
     Task AddAutomationAsync(Automation automation);
     Task AddVariableValueAsync(VariableValue variableValue);
     Task AddLibraryAsync(Library library);
-    Task AddAIProviderAsync(AIProvider library);
+    Task AddAIProviderAsync(AIProvider aIProvider);
+    Task AddAIConversationAsync(AIConversation aIConversation);
     Task UpdateClientAsync(Client client);
     Task UpdateVariableAsync(Variable variable);
     Task UpdateAutomationAsync(Automation automation);
     Task UpdateVariableValueAsync(VariableValue variableValue);
     Task UpdateLibraryAsync(Library library);
     Task UpdateAIProviderAsync(AIProvider aIProvider);
+    Task UpdateAIConversationAsync(AIConversation aIConversation);
     Task DeleteClientAsync(Client client);
     Task DeleteVariableAsync(Variable variable);
     Task DeleteAutomationAsync(Automation automation);
@@ -30,4 +33,5 @@ public interface IRepository
     Task DeleteVariableValuesAsync(List<int> ids);
     Task DeleteLibraryAsync(Library library);
     Task DeleteAIProviderAsync(AIProvider aIProvider);
+    Task DeleteAIConversationAsync(AIConversation aIConversation);
 }

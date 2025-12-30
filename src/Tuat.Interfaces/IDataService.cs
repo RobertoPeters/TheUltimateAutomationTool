@@ -11,6 +11,7 @@ public interface IDataService
     List<Automation> GetAutomations();
     List<Library> GetLibraries();
     List<AIProvider> GetAIProviders();
+    List<AIConversation> GetAIConversations();
     Task AddOrUpdateClientAsync(Client client);
     Task AddOrUpdateVariableAsync(Variable variable);
     Task AddOrUpdateVariableValueAsync(VariableValue variableValue);
@@ -23,4 +24,6 @@ public interface IDataService
     Task DeleteLibraryAsync(Library library);
     Task AddOrUpdateAIProviderAsync(AIProvider aIProvider);
     Task DeleteAIProviderAsync(AIProvider aIProvider);
+    Task AddOrUpdateAIConversationAsync(AIConversation aIConversation);
+    Task DeleteAIConversationAsync(AIConversation aIConversation);
 }

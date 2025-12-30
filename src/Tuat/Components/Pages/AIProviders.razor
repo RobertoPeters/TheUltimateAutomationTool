@@ -15,7 +15,7 @@
 
 @if (aiProviders != null)
 {
-	<RadzenButton Text="Add" Click="@(() => AddOrEditClientAsync(null))" />
+	<RadzenButton Text="Add" Click="@(() => AddOrEditProviderAsync(null))" />
 	<RadzenDataGrid @ref="grid" AllowFiltering="true"
 					AllowColumnResize="true"
 					AllowAlternatingRows="false"
@@ -32,20 +32,11 @@
 					TItem="AIProvider">
 		<Columns>
 			<RadzenDataGridColumn TItem="AIProvider"
-								  Property="@nameof(Library.Id)"
-								  Filterable="false"
-								  Sortable="false"
-								  Resizable="false"
-								  Width="96px"
-								  Title="">
-			</RadzenDataGridColumn>
-
-			<RadzenDataGridColumn TItem="AIProvider"
-								  Property="@nameof(Library.Id)"
+								  Property="@nameof(AIProvider.Id)"
 								  Title="Id" />
 
 			<RadzenDataGridColumn TItem="AIProvider"
-								  Property="@nameof(Library.Name)"
+								  Property="@nameof(AIProvider.Name)"
 								  Title="Name" />
 
 			<RadzenDataGridColumn TItem="AIProvider"
@@ -61,10 +52,10 @@
 			<RadzenDataGridColumn TItem="AIProvider"
 								  Filterable="false"
 								  Sortable="false"
-								  Property="@nameof(Library.Id)"
+								  Property="@nameof(AIProvider.Id)"
 								  Title="">
 				<Template Context="aiProvider">
-					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAIProviderAsync(aiProvider))" />
+					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.ExtraSmall" Text="Edit" Click="@(() => AddOrEditProviderAsync(aiProvider))" />
 					<RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.ExtraSmall" Text="Delete" Click="@(() => DeleteAIProviderAsync(aiProvider))" />
 				</Template>
 			</RadzenDataGridColumn>
@@ -119,7 +110,7 @@
 		}
 	}
 
-	private async Task AddOrEditClientAsync(AIProvider? aiProvider)
+	private async Task AddOrEditProviderAsync(AIProvider? aiProvider)
 	{
 		await DialogService.ShowDialogAsync<AddOrEditAIProviderDialog>($"{(aiProvider == null ? "Add" : "Edit")} AI Provider", dialog =>
 		{

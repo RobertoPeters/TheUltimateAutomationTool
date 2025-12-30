@@ -1,5 +1,6 @@
 ﻿using JasperFx.Core.Reflection;
 using System.Collections.Concurrent;
+using Tuat.Interfaces;
 
 namespace Tuat.Helpers.Generics;
 
@@ -216,6 +217,39 @@ public static class Generic
                 }
             }
             return _aiProviderTypeDisplayNames!;
+        }
+    }
+
+    private static Dictionary<string, IAgentSetting> _agentSettings = null!;
+    public static Dictionary<string, IAgentSetting> AgentSettings
+    {
+        get
+        {
+            if (_agentSettings == null)
+            {
+                lock (_lockObject)
+                {
+                    if (_agentSettings == null)
+                    {
+                        var interfaceType = typeof(Tuat.Interfaces.IAgentSetting);
+                        var types = AppDomain.CurrentDomain.GetAssemblies()
+                            .SelectMany(s => s.GetTypes())
+                            .Where(p => interfaceType.IsAssignableFrom(p));
+                        Dictionary<string, IAgentSetting> items = [];
+                        foreach (var type in types)
+                        {
+                            if (!type.IsPublic || type.IsInterface || type.IsAbstract)
+                            {
+                                continue;
+                            }
+                            var instance = (IAgentSetting)Activator.CreateInstance(type)!;
+                            items.Add(instance.Id, instance);
+                        }
+                        _agentSettings = items;
+                    }
+                }
+            }
+            return _agentSettings!;
         }
     }
 

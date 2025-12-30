@@ -15,6 +15,7 @@ public class DataRepository(IConfiguration _configuration) : IRepository
     const string AutomationTableName = "Automation";
     const string LibraryTableName = "Library";
     const string AIProviderTableName = "AIProvider";
+    const string AIConversationTableName = "AIConversation";
 
     public async Task SetupAsync()
     {
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS {AutomationTableName}(Id INTEGER PRIMARY KEY AUTOINCR
 CREATE TABLE IF NOT EXISTS {VariableValueTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {LibraryTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
+CREATE TABLE IF NOT EXISTS {AIConversationTableName}(Id INTEGER PRIMARY KEY AUTOINCREMENT, Data blob);
 ";
         await command.ExecuteNonQueryAsync();
         await command.DisposeAsync();
@@ -65,6 +67,11 @@ CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCR
         return await GetItemsAsync<AIProvider>(AIProviderTableName);
     }
 
+    public async Task<List<AIConversation>> GetAIConversationsAsync()
+    {
+        return await GetItemsAsync<AIConversation>(AIConversationTableName);
+    }
+
     public async Task AddClientAsync(Client client)
     {
         await AddItemAsync(ClientTableName, client);
@@ -95,6 +102,11 @@ CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCR
         await AddItemAsync(AIProviderTableName, aIProvider);
     }
 
+    public async Task AddAIConversationAsync(AIConversation aIConversation)
+    {
+        await AddItemAsync(AIConversationTableName, aIConversation);
+    }
+
     public async Task UpdateClientAsync(Client client)
     {
         await UpdateItemAsync(ClientTableName, client);
@@ -123,6 +135,11 @@ CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCR
     public async Task UpdateAIProviderAsync(AIProvider aIProvider)
     {
         await UpdateItemAsync(AIProviderTableName, aIProvider);
+    }
+
+    public async Task UpdateAIConversationAsync(AIConversation aIConversation)
+    {
+        await UpdateItemAsync(AIConversationTableName, aIConversation);
     }
 
     public async Task DeleteClientAsync(Client client)
@@ -163,6 +180,11 @@ CREATE TABLE IF NOT EXISTS {AIProviderTableName}(Id INTEGER PRIMARY KEY AUTOINCR
     public async Task DeleteAIProviderAsync(AIProvider aIProvider)
     {
         await DeleteItemAsync(AIProviderTableName, aIProvider);
+    }
+
+    public async Task DeleteAIConversationAsync(AIConversation aIConversation)
+    {
+        await DeleteItemAsync(AIConversationTableName, aIConversation);
     }
 
     private async Task<T> AddItemAsync<T>(string tableName, T item) where T : ModelBase

@@ -14,7 +14,7 @@
 </RadzenFormField>
 <RadzenFormField Text="Model" Variant="@Variant.Outlined">
 	<ChildContent>
-		<RadzenPassword @bind-Value="@providerProperties!.Model" Name="Token" />
+		<RadzenTextBox @bind-Value="@providerProperties!.Model" Name="Model" />
 	</ChildContent>
 	<Helper>
 		<RadzenRequiredValidator Component="Model" Text="This field is required" />

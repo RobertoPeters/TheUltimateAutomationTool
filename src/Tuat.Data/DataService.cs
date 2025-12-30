@@ -13,6 +13,7 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
     private readonly ConcurrentDictionary<int, Automation> _automations = [];
     private readonly ConcurrentDictionary<int, Library> _libraries = [];
     private readonly ConcurrentDictionary<int, AIProvider> _aiProviders = [];
+    private readonly ConcurrentDictionary<int, AIConversation> _aiConversations = [];
 
     private int _lastUsedNonPersistentVariableValueId = int.MaxValue;
 
@@ -62,6 +63,12 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
         {
             _aiProviders.TryAdd(aiprovider.Id, aiprovider);
         }
+
+        var aiconversations = await _dataRepository.GetAIConversationsAsync();
+        foreach (var aiconversation in aiconversations)
+        {
+            _aiConversations.TryAdd(aiconversation.Id, aiconversation);
+        }
     }
 
     public List<Client> GetClients()
@@ -92,6 +99,11 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
     public List<AIProvider> GetAIProviders()
     {
         return _aiProviders.Values.ToList();
+    }
+
+    public List<AIConversation> GetAIConversations()
+    {
+        return _aiConversations.Values.ToList();
     }
 
     public async Task AddOrUpdateClientAsync(Client client)
@@ -243,6 +255,20 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
         await _messageBusService.PublishAsync(aIProvider);
     }
 
+    public async Task AddOrUpdateAIConversationAsync(AIConversation aIConversation)
+    {
+        if (aIConversation.Id == 0)
+        {
+            await _dataRepository.AddAIConversationAsync(aIConversation);
+        }
+        else
+        {
+            await _dataRepository.UpdateAIConversationAsync(aIConversation);
+        }
+        _aiConversations.AddOrUpdate(aIConversation.Id, aIConversation, (_, _) => aIConversation);
+        await _messageBusService.PublishAsync(aIConversation);
+    }
+
     public async Task DeleteAutomationAsync(Automation automation)
     {
         if (_automations.TryRemove(Math.Abs(automation.Id), out var orgAutomation))
@@ -288,6 +314,16 @@ public class DataService(IRepository _dataRepository, IMessageBusService _messag
             await _dataRepository.DeleteAIProviderAsync(aIProvider);
             orgAIProvider.Id = -Math.Abs(orgAIProvider.Id);
             await _messageBusService.PublishAsync(orgAIProvider);
+        }
+    }
+
+    public async Task DeleteAIConversationAsync(AIConversation aIConversation)
+    {
+        if (_aiConversations.TryRemove(Math.Abs(aIConversation.Id), out var orgAIConversation))
+        {
+            await _dataRepository.DeleteAIConversationAsync(aIConversation);
+            orgAIConversation.Id = -Math.Abs(orgAIConversation.Id);
+            await _messageBusService.PublishAsync(orgAIConversation);
         }
     }
 

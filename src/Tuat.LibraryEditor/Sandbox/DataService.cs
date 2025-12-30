@@ -11,6 +11,11 @@ internal class DataService(IDataService _realDataService) : IDataService
     private readonly ConcurrentDictionary<int, Automation> _automations = [];
     private readonly ConcurrentDictionary<int, Library> _libraries = [];
 
+    public Task AddOrUpdateAIConversationAsync(AIConversation aIConversation)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task AddOrUpdateAIProviderAsync(AIProvider aIProvider)
     {
         throw new NotImplementedException();
@@ -77,6 +82,11 @@ internal class DataService(IDataService _realDataService) : IDataService
         return Task.CompletedTask;
     }
 
+    public Task DeleteAIConversationAsync(AIConversation aIConversation)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task DeleteAIProviderAsync(AIProvider aIProvider)
     {
         throw new NotImplementedException();
@@ -103,6 +113,11 @@ internal class DataService(IDataService _realDataService) : IDataService
     }
 
     public Task DeleteVariableValueAsync(VariableValue variableValue)
+    {
+        throw new NotImplementedException();
+    }
+
+    public List<AIConversation> GetAIConversations()
     {
         throw new NotImplementedException();
     }

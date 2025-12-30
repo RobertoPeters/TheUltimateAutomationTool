@@ -1,0 +1,78 @@
+﻿@using Tuat.Dialogs
+@using Tuat.Extensions
+@using Tuat.Models
+@using Tuat.Interfaces
+@inject IDataService DataService
+@inherits DialogBase
+
+@if (Model != null)
+{
+    <RadzenTemplateForm @ref="Form" Data="@Model" TItem="AIConversation">
+        <RadzenStack>
+            <RadzenFormField Text="Name *" Variant="@Variant.Outlined">
+                <ChildContent>
+                    <RadzenTextBox @bind-Value="@Model!.Name" Name="Name" Placeholder="name" spellcheck="false" />
+                </ChildContent>
+                <Helper>
+                    <RadzenRequiredValidator Component="Name" Text="This field is required" />
+                    <RadzenCustomValidator Component="Name" Validator="@(() => !ExistingAIConversationNames.Contains(Model!.Name))" Text="Name should be unique" />
+                </Helper>
+            </RadzenFormField>
+            <RadzenFormField Text="Default provider *" Variant="@Variant.Outlined">
+                <ChildContent>
+                    <RadzenDropDown Data="aiProviders" ValueProperty="@nameof(AIProvider.Id)" TextProperty="@nameof(AIProvider.Name)" @bind-Value="@Model!.DefaultAIProviderId" Name="ProviderType" />
+                </ChildContent>
+                <Helper>
+                    <RadzenRequiredValidator Component="ProviderType" Text="This field is required" />
+                </Helper>
+            </RadzenFormField>
+            <RadzenButton ButtonType="ButtonType.Button" Text="OK" Click="@OnSubmit" />
+        </RadzenStack>
+    </RadzenTemplateForm>
+}
+
+@code {
+    protected override bool ShowClose => true;
+    protected override bool IsPersistent => false;
+    protected override bool CloseDialogOnOverlayClick => true;
+    protected override int? WidthInPixels => 1400;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    [Parameter]
+    public HashSet<string> ExistingAIConversationNames { get; set; } = [];
+
+    AIConversation? Model;
+    RadzenTemplateForm<AIConversation>? Form;
+    List<AIProvider>? aiProviders = null;
+
+
+    protected override void OnInitialized()
+    {
+        aiProviders = DataService.GetAIProviders();
+        var allAIConversations = DataService.GetAIConversations();
+        Id ??= 0;
+        if (Id == 0)
+        {
+            Model = new();
+        }
+        else
+        {
+            Model = allAIConversations.First(x => x.Id == Id).CopyObject()!;
+            Model.Id = Id.Value;
+        }
+        ExistingAIConversationNames = allAIConversations.Where(x => x.Id != Id).Select(x => x.Name).ToHashSet();
+        base.OnInitialized();
+    }
+
+    async Task OnSubmit()
+    {
+        Form!.EditContext.Validate();
+        if (Form.IsValid)
+        {
+            await DataService.AddOrUpdateAIConversationAsync(Model!);
+            Close();
+        }
+    }
+}

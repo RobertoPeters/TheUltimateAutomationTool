@@ -56,5 +56,10 @@ public static class UIEventRegistrationMessageHandler
     {
         uiEventRegistration.Handle(aIProvider);
     }
+
+    public static void Handle(Models.AIConversation aIConversation, IUIEventRegistration uiEventRegistration)
+    {
+        uiEventRegistration.Handle(aIConversation);
+    }
 }
 

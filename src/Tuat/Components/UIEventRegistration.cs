@@ -15,6 +15,7 @@ public class UIEventRegistration: IUIEventRegistration
     public event EventHandler<AutomationTriggered>? AutomationTriggered;
     public event EventHandler<Library>? LibraryChanged;
     public event EventHandler<AIProvider>? AIProviderChanged;
+    public event EventHandler<AIConversation>? AIConversationChanged;
 
     public void Handle(ClientHandlerInfo clientHandler)
     {
@@ -65,5 +66,10 @@ public class UIEventRegistration: IUIEventRegistration
     public void Handle(AIProvider aIProvider)
     {
         AIProviderChanged?.Invoke(this, aIProvider);
+    }
+
+    public void Handle(AIConversation aIConversation)
+    {
+        AIConversationChanged?.Invoke(this, aIConversation);
     }
 }
