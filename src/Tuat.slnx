@@ -7,6 +7,8 @@
   <Project Path="Blazor.Diagrams/Blazor.Diagrams.Core/Blazor.Diagrams.Core.csproj" />
   <Project Path="Blazor.Diagrams/Blazor.Diagrams/Blazor.Diagrams.csproj" />
   <Project Path="HassClient/HassClient.csproj" />
+  <Project Path="Tuat.AIConversations/Tuat.AIConversations.csproj" Id="1db401a7-99d6-4452-abd7-1280352c02d9" />
+  <Project Path="Tuat.AIProviderGoogleGemini/Tuat.AIProviderGoogleGemini.csproj" Id="21d5b51d-133e-44f4-aeb4-9cea7b83a335" />
   <Project Path="Tuat.AIProviderOllama/Tuat.AIProviderOllama.csproj" Id="9bdcb767-bb63-4389-97c4-88cb0cc20f99" />
   <Project Path="Tuat.AutomationHelper/Tuat.AutomationHelper.csproj" Id="c83ea021-3589-4ad5-9f67-aabef723631c" />
   <Project Path="Tuat.Automations/Tuat.Automations.csproj" Id="c7442c81-32f3-45be-9e9a-49a5c82b5858" />

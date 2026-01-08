@@ -45,9 +45,22 @@
 		{
 			automationProperties.Script = scriptEngine?.GetDeclareFunction("schedule", null) ?? "";
 		}
-		EditorPropertiesParameters = new Dictionary<string, object?>() { { "Script", automationProperties.Script }, { "SystemScript", GetSystemScript(scriptEngine) }, { "Height", Height ?? "85vh" } };
+		EditorPropertiesParameters = new Dictionary<string, object?>() 
+		{ 
+			{ "Script", automationProperties.Script },
+			{ "SystemScript", GetSystemScript(scriptEngine) }, 
+			{ "Height", Height ?? "85vh" },
+			{ "ConversationAgentInstructions", ConversationAgentInstructions}
+		};
 		await base.OnInitializedAsync();
 	}
+
+	string ConversationAgentInstructions => $""""
+You are an expert automation using script.
+The programming language is {Tuat.Helpers.Generics.Generic.ScriptTypeDisplayNames.FirstOrDefault(x => x.EditorComponentType == ScriptEditorType)?.DisplayName}.
+The method or function 'schedule()' is called periodically and is mandatory to be available.
+First check if the question is related to system code like timers, variable creating, etc., if so, answer according to that.
+"""";
 
 	string GetSystemScript(IScriptEngine? scriptEngine)
 	{

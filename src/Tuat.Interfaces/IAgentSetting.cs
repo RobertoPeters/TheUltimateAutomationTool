@@ -9,5 +9,5 @@ public interface IAgentSetting
     Type? ScriptEngineType { get; }
     Type? AutomationType { get; }
 
-    string GetInstructions(IScriptEngine scriptEngine, IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler automationHandler, Guid? instanceId = null, string? additionalScript = null, List<AutomationInputVariable>? inputValues = null, int? topAutomationId = null);
+    string? GetInstructions(IClientService clientService, IDataService dataService, IVariableService variableService, IAutomationHandler? automationHandler, Guid? instanceId = null, string? systemCode = null, string? userCode = null, List<AutomationInputVariable>? inputValues = null, int? topAutomationId = null);
 }

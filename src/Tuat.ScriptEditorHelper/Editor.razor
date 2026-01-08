@@ -21,9 +21,23 @@
 							  ConstructionOptions="EditorConstructionOptions" />
 	</RadzenSplitterPane>
 	<RadzenSplitterPane Min="10px">
-		<StandaloneCodeEditor @ref="systemStandaloneCodeEditor"
-							  CssClass="my-editor-class"							  
-							  ConstructionOptions="EditorConstructionOptionsSystem" />
+		<RadzenTabs>
+			<Tabs>
+				<RadzenTabsItem Text="System Script">
+					<StandaloneCodeEditor @ref="systemStandaloneCodeEditor"
+										  CssClass="my-editor-class"
+										  ConstructionOptions="EditorConstructionOptionsSystem" />
+				</RadzenTabsItem>
+				<RadzenTabsItem Text="Copilot chat">
+					<Tuat.AIConversations.Copilot AutomationHandler="null"
+												  ScriptEngineType="@ScriptEngineType"
+												  Tools="null"
+												  ConversationAgentInstructions="@ConversationAgentInstructions"
+												  SystemCode="@SystemScript"
+												  UserCode="@Script" />
+				</RadzenTabsItem>
+			</Tabs>
+		</RadzenTabs>
 	</RadzenSplitterPane>
 </RadzenSplitter>
 
@@ -41,12 +55,16 @@
 	[Parameter]
 	public bool ReadOnly { get; set; }
 
+	[Parameter]
+	public string? ConversationAgentInstructions { get; set; }
+
 	private StandaloneCodeEditor? standaloneCodeEditor;
 	private StandaloneCodeEditor? systemStandaloneCodeEditor;
 	private int systemScriptLength = 0;
 	private int scriptStartPosition = 0;
 
 	protected virtual string Language => "javascript";
+	protected virtual Type? ScriptEngineType => null;
 
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
@@ -78,9 +96,9 @@
 		}
 		var result = new StringBuilder();
 		var lines = SystemScript.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-		foreach(var line in lines)
+		foreach (var line in lines)
 		{
-			result.AppendLine(line);			
+			result.AppendLine(line);
 		}
 		scriptStartPosition = result.ToString().Length;
 		systemScriptLength = lines.Count();

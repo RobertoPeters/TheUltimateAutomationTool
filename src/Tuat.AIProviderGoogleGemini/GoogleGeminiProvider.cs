@@ -1,21 +1,21 @@
-﻿using Microsoft.Agents.AI;
+﻿using GenerativeAI.Microsoft;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using OllamaSharp;
 using System.ComponentModel;
 using System.Reflection;
 using Tuat.Interfaces;
 using Tuat.Models;
 
-namespace Tuat.AIProviderOllama;
+namespace Tuat.AIProviderGoogleGemini;
 
-[DisplayName("Ollama")]
-[Editor("Tuat.AIProviderOllama.ProviderSettings", typeof(ProviderSettings))]
-public class OllamaProvider : IAIProvider
+[DisplayName("Google Gemini")]
+[Editor("Tuat.AIProviderGoogleGemini.ProviderSettings", typeof(ProviderSettings))]
+public class GoogleGeminiProvider : IAIProvider
 {
     public AIAgent CreateAIAgent(AIProvider provider, IAIProvider.AIAgentSettings settings)
     {
         var providerProperties = GetProviderProperties(provider.Settings);
-        var client = new OllamaApiClient(providerProperties.OllamaApiUrl, providerProperties.Model);
+        var client = new GenerativeAIChatClient(providerProperties.ApiKey, providerProperties.Model);
         List<AITool>? tools = null;
 
         if (settings.Agents?.Any() == true || settings.Tools?.Any() == true)
