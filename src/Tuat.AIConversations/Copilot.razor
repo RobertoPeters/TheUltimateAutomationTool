@@ -12,14 +12,15 @@
 
 <RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
 	<RadzenSplitterPane Size="40vh" Min="300px">
-		<div style="width:100%;height:100%;overflow:auto;white-space:pre;">
+		<RadzenMarkdown Style="width:100%;height:100%;overflow:auto;" Text="@agentResponse.ToString()" />
+@* 		<div style="width:100%;height:100%;overflow:auto;white-space:pre;">
 			<pre>@agentResponse.ToString()</pre>
-		</div>
+		</div> *@
 	</RadzenSplitterPane>
 	<RadzenSplitterPane Min="100px">
 		<RadzenDropDown TValue="AIConversation" Data="@aIConversations" @bind-Value="selectedAIConversation" TextProperty="@nameof(AIConversation.Name)" />
 		<RadzenTextArea Style="width:100%;height:20vh" @bind-Value="prompt" />
-		<RadzenButton Text="New Chat" Click="async () => NewChat(prompt)" Style="margin-top:10px" />
+		<RadzenButton Text="New Chat" Click="async () => NewChat(prompt)" Style="margin-top:10px" Disabled="@(selectedAIConversation == null)" />
 	</RadzenSplitterPane>
 </RadzenSplitter>
 
@@ -70,6 +71,7 @@
 	public void NewChat(string prompt)
 	{
 		Stop();
+		agentResponse = new();
 		cancellationTokenSource = new CancellationTokenSource();
 		var agent = AIConversationService.CreateAIConversationAgent(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
 
