@@ -12,9 +12,9 @@
 
 <RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
 	<RadzenSplitterPane Size="40vh" Min="300px">
-		<pre>
-		@agentResponse.ToString()
-		</pre>
+		<div style="width:100%;height:100%;overflow:auto;white-space:pre;">
+			<pre>@agentResponse.ToString()</pre>
+		</div>
 	</RadzenSplitterPane>
 	<RadzenSplitterPane Min="100px">
 		<RadzenDropDown TValue="AIConversation" Data="@aIConversations" @bind-Value="selectedAIConversation" TextProperty="@nameof(AIConversation.Name)" />
@@ -25,126 +25,126 @@
 
 
 @code {
-    [Parameter]
-    public IAutomationHandler? AutomationHandler { get; set; }
+	[Parameter]
+	public IAutomationHandler? AutomationHandler { get; set; }
 
-    [Parameter]
-    public Type? ScriptEngineType { get; set; }
+	[Parameter]
+	public Type? ScriptEngineType { get; set; }
 
-    [Parameter]
-    public List<object>? Tools { get; set; }
+	[Parameter]
+	public List<object>? Tools { get; set; }
 
-    [Parameter]
-    public string? SystemCode { get; set; }
+	[Parameter]
+	public string? SystemCode { get; set; }
 
-    [Parameter]
-    public string? UserCode { get; set; }
+	[Parameter]
+	public string? UserCode { get; set; }
 
-    [Parameter]
-    public string? ConversationAgentInstructions { get; set; }
-
-
-    List<AIConversation> aIConversations = null!;
-    AIConversation? selectedAIConversation;
-    CancellationTokenSource? cancellationTokenSource;
-    string prompt = "";
-    StringBuilder agentResponse = new();
-
-    protected override void OnInitialized()
-    {
-        aIConversations = DataService.GetAIConversations().ToList();
-        base.OnInitialized();
-    }
-
-    public void Dispose()
-    {
-        Stop();
-    }
-
-    void Stop()
-    {
-        cancellationTokenSource?.Cancel();
-        cancellationTokenSource = null;
-    }
-
-    public void NewChat(string prompt)
-    {
-        Stop();
-        cancellationTokenSource = new CancellationTokenSource();
-        var agent = AIConversationService.CreateAIConversationAgent(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
-
-        Task.Factory.StartNew(async () =>
-        {
-        	await foreach (AgentRunResponseUpdate update in agent.RunStreamingAsync(prompt, cancellationToken: cancellationTokenSource.Token))
-        	{
-        		if (cancellationTokenSource != null)
-        		{
-        			agentResponse.Append(update.Text);
-        			await InvokeAsync(StateHasChanged);
-        		}
-        	}
-
-        });
+	[Parameter]
+	public string? ConversationAgentInstructions { get; set; }
 
 
-        // Task.Factory.StartNew(async () =>
-        // {
-        //     List<Microsoft.Extensions.AI.ChatMessage> messages = [];
-        //     var workflow = AIConversationService.CreateAIConversationWorkflow(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
-        //     messages.Add(new(ChatRole.User, prompt));
-        //     messages.AddRange(await RunWorkflowAsync(workflow, messages));
-        // });
-    }
+	List<AIConversation> aIConversations = null!;
+	AIConversation? selectedAIConversation;
+	CancellationTokenSource? cancellationTokenSource;
+	string prompt = "";
+	StringBuilder agentResponse = new();
 
-    async Task<List<Microsoft.Extensions.AI.ChatMessage>> RunWorkflowAsync(Workflow workflow, List<Microsoft.Extensions.AI.ChatMessage> messages)
-    {
-        string? lastExecutorId = null;
-        var run = await InProcessExecution.StreamAsync(workflow, messages);
-        await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
-        await foreach (WorkflowEvent @event in run.WatchStreamAsync().WithCancellation(cancellationTokenSource!.Token))
-        {
-            switch (@event)
-            {
-                case AgentRunUpdateEvent e:
-                    {
-                        if (e.ExecutorId != lastExecutorId)
-                        {
-                            lastExecutorId = e.ExecutorId;
-                            System.Diagnostics.Debugger.Log(0, null, "\r\n");
-                            System.Diagnostics.Debugger.Log(0, null, e.Update.AuthorName ?? e.ExecutorId);
-                        }
+	protected override void OnInitialized()
+	{
+		aIConversations = DataService.GetAIConversations().ToList();
+		base.OnInitialized();
+	}
 
-                        System.Diagnostics.Debugger.Log(0, null, e.Update.Text);
-                        System.Diagnostics.Debugger.Log(0, null, "\r\n");
-                        agentResponse.Append(e.Update.Text);
-                        await InvokeAsync(StateHasChanged);
+	public void Dispose()
+	{
+		Stop();
+	}
 
-                        if (e.Update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is FunctionCallContent call)
-                        {
-                            System.Diagnostics.Debugger.Log(0, null, "\r\n");
-                            System.Diagnostics.Debugger.Log(0, null, $"Call '{call.Name}' with arguments: {System.Text.Json.JsonSerializer.Serialize(call.Arguments)}] \r\n");
-                        }
+	void Stop()
+	{
+		cancellationTokenSource?.Cancel();
+		cancellationTokenSource = null;
+	}
 
-                        break;
-                    }
-                case WorkflowOutputEvent output:
-                    System.Diagnostics.Debugger.Log(0, null, "----------------------------------");
-                    System.Diagnostics.Debugger.Log(0, null, "\r\n");
-                    return output.As<List<Microsoft.Extensions.AI.ChatMessage>>()!;
+	public void NewChat(string prompt)
+	{
+		Stop();
+		cancellationTokenSource = new CancellationTokenSource();
+		var agent = AIConversationService.CreateAIConversationAgent(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
 
-                case ExecutorFailedEvent failedEvent:
-                    if (failedEvent.Data is Exception ex)
-                    {
-                        System.Diagnostics.Debugger.Log(0, null, $"Error in agent {failedEvent.ExecutorId}: " + ex);
-                        System.Diagnostics.Debugger.Log(0, null, "\r\n");
-                    }
+		Task.Factory.StartNew(async () =>
+		{
+			await foreach (AgentRunResponseUpdate update in agent.RunStreamingAsync(prompt, cancellationToken: cancellationTokenSource.Token))
+			{
+				if (cancellationTokenSource != null)
+				{
+					agentResponse.Append(update.Text);
+					await InvokeAsync(StateHasChanged);
+				}
+			}
 
-                    break;
-            }
-        }
+		});
 
-        return [];
-    }
+
+		// Task.Factory.StartNew(async () =>
+		// {
+		//     List<Microsoft.Extensions.AI.ChatMessage> messages = [];
+		//     var workflow = AIConversationService.CreateAIConversationWorkflow(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
+		//     messages.Add(new(ChatRole.User, prompt));
+		//     messages.AddRange(await RunWorkflowAsync(workflow, messages));
+		// });
+	}
+
+	async Task<List<Microsoft.Extensions.AI.ChatMessage>> RunWorkflowAsync(Workflow workflow, List<Microsoft.Extensions.AI.ChatMessage> messages)
+	{
+		string? lastExecutorId = null;
+		var run = await InProcessExecution.StreamAsync(workflow, messages);
+		await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
+		await foreach (WorkflowEvent @event in run.WatchStreamAsync().WithCancellation(cancellationTokenSource!.Token))
+		{
+			switch (@event)
+			{
+				case AgentRunUpdateEvent e:
+					{
+						if (e.ExecutorId != lastExecutorId)
+						{
+							lastExecutorId = e.ExecutorId;
+							System.Diagnostics.Debugger.Log(0, null, "\r\n");
+							System.Diagnostics.Debugger.Log(0, null, e.Update.AuthorName ?? e.ExecutorId);
+						}
+
+						System.Diagnostics.Debugger.Log(0, null, e.Update.Text);
+						System.Diagnostics.Debugger.Log(0, null, "\r\n");
+						agentResponse.Append(e.Update.Text);
+						await InvokeAsync(StateHasChanged);
+
+						if (e.Update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is FunctionCallContent call)
+						{
+							System.Diagnostics.Debugger.Log(0, null, "\r\n");
+							System.Diagnostics.Debugger.Log(0, null, $"Call '{call.Name}' with arguments: {System.Text.Json.JsonSerializer.Serialize(call.Arguments)}] \r\n");
+						}
+
+						break;
+					}
+				case WorkflowOutputEvent output:
+					System.Diagnostics.Debugger.Log(0, null, "----------------------------------");
+					System.Diagnostics.Debugger.Log(0, null, "\r\n");
+					return output.As<List<Microsoft.Extensions.AI.ChatMessage>>()!;
+
+				case ExecutorFailedEvent failedEvent:
+					if (failedEvent.Data is Exception ex)
+					{
+						System.Diagnostics.Debugger.Log(0, null, $"Error in agent {failedEvent.ExecutorId}: " + ex);
+						System.Diagnostics.Debugger.Log(0, null, "\r\n");
+					}
+
+					break;
+			}
+		}
+
+		return [];
+	}
 
 	async ValueTask<object?> FunctionCallMiddleware(AIAgent callingAgent, FunctionInvocationContext context, Func<FunctionInvocationContext, CancellationToken, ValueTask<object?>> next, CancellationToken cancellationToken)
 	{
@@ -155,7 +155,7 @@
 			functionCallDetails.Append($" (Args: {string.Join(",", context.Arguments.Select(x => $"[{x.Key} = {x.Value}]"))}");
 		}
 
-        System.Diagnostics.Debugger.Log(0, null, functionCallDetails.ToString());
+		System.Diagnostics.Debugger.Log(0, null, functionCallDetails.ToString());
 
 		return await next(context, cancellationToken);
 	}

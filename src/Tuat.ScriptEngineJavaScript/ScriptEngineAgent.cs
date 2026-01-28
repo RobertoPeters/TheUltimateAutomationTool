@@ -6,9 +6,9 @@ public class ScriptEngineSystemCodeAgent : IAgentSetting
 {
     public string Id => "Tuat.ScriptEngineJavaScript.ScriptEngineSystemCodeAgent";
 
-    public string Name => "JavaScript system code";
+    public string Name => "JavaScript fixed application specific code";
 
-    public string Description => "JavaScript TUAT related fixed system code";
+    public string Description => "JavaScript fixed application specific code. These are application javascript functions.";
 
     public Type? ClientType => null;
 
@@ -29,7 +29,7 @@ public class ScriptEngineSystemCodeAgent : IAgentSetting
             You do not run in a browser.
             The javascript parser is done by the nuget package Jint.
             Only answer questions about the following fixed system code
-            Use the following system code as a reference for your operations:
+            Use the following system code as a reference for your answers:
 
             {systemCode}
             """";
@@ -42,7 +42,7 @@ public class ScriptEngineUserCodeAgent : IAgentSetting
 
     public string Name => "JavaScript user code";
 
-    public string Description => "JavaScript TUAT related changable user code";
+    public string Description => "JavaScript changable user code. This code is created by the user.";
 
     public Type? ClientType => null;
 
@@ -59,7 +59,7 @@ public class ScriptEngineUserCodeAgent : IAgentSetting
 
         return $""""
             You are an expert in application specific user created JavaScript code. 
-            The scripting lamnguage is javascript.
+            The scripting language is javascript.
             You do not run in a browser.
             The javascript parser is done by the nuget package Jint.
             Only answer questions about the following user code
