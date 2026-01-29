@@ -1,4 +1,4 @@
-﻿using GenerativeAI.Microsoft;
+﻿using Google.GenAI.Types;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.ComponentModel;
@@ -15,7 +15,7 @@ public class GoogleGeminiProvider : IAIProvider
     public AIAgent CreateAIAgent(AIProvider provider, IAIProvider.AIAgentSettings settings)
     {
         var providerProperties = GetProviderProperties(provider.Settings);
-        var client = new GenerativeAIChatClient(providerProperties.ApiKey, providerProperties.Model);
+        var client = new Google.GenAI.Client(apiKey: providerProperties.ApiKey).AsIChatClient(providerProperties.Model);
         List<AITool>? tools = null;
 
         if (settings.Agents?.Any() == true || settings.Tools?.Any() == true)

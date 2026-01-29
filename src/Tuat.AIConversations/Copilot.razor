@@ -1,5 +1,4 @@
 ﻿@using Microsoft.Agents.AI
-@using Microsoft.Agents.AI.Workflows
 @using Microsoft.Extensions.AI
 @using Radzen
 @using Radzen.Blazor
@@ -8,19 +7,19 @@
 @using Tuat.Models
 @implements IDisposable
 @inject IAIConversationService AIConversationService
+@inject NavigationManager NavigationManager
 @inject IDataService DataService;
 
 <RadzenSplitter Orientation="Radzen.Orientation.Vertical" style="width: 100%;height: 95vh">
 	<RadzenSplitterPane Size="40vh" Min="300px">
 		<RadzenMarkdown Style="width:100%;height:100%;overflow:auto;" Text="@agentResponse.ToString()" />
-@* 		<div style="width:100%;height:100%;overflow:auto;white-space:pre;">
-			<pre>@agentResponse.ToString()</pre>
-		</div> *@
 	</RadzenSplitterPane>
 	<RadzenSplitterPane Min="100px">
-		<RadzenDropDown TValue="AIConversation" Data="@aIConversations" @bind-Value="selectedAIConversation" TextProperty="@nameof(AIConversation.Name)" />
+		<RadzenDropDown TValue="AIConversation" Data="@aIConversations" @bind-Value="selectedAIConversation" TextProperty="@nameof(AIConversation.Name)" Change="@AIConversationChange" />
 		<RadzenTextArea Style="width:100%;height:20vh" @bind-Value="prompt" />
-		<RadzenButton Text="New Chat" Click="async () => NewChat(prompt)" Style="margin-top:10px" Disabled="@(selectedAIConversation == null)" />
+		<RadzenButton Text="New Chat" Click="async () => NewChat()" Style="margin-top:10px" Disabled="@(selectedAIConversation == null || string.IsNullOrWhiteSpace(prompt))" />
+		<RadzenButton Text="Stop" Click="async () => Stop()" Style="margin-top:10px" Disabled="@(cancellationTokenSource == null)" />
+		<RadzenButton Text="Continue Chat" Click="async () => ContinueChat()" Style="margin-top:10px" Disabled="@(cancellationTokenSource != null || selectedAIConversation == null || string.IsNullOrWhiteSpace(prompt) || latestReceivedUpdate == null || thread == null)" />
 	</RadzenSplitterPane>
 </RadzenSplitter>
 
@@ -44,16 +43,27 @@
 	[Parameter]
 	public string? ConversationAgentInstructions { get; set; }
 
+	private sealed class ConversationState
+	{
+		public int? SelectedConversationId { get; set; }
+		public string? AgentResponse { get; set; }
+		public System.Text.Json.JsonElement? Thread { get; set; }
+		public string? LatestReceivedUpdate { get; set; }
+	}
 
+	ConversationState? conversationState;
 	List<AIConversation> aIConversations = null!;
 	AIConversation? selectedAIConversation;
 	CancellationTokenSource? cancellationTokenSource;
 	string prompt = "";
 	StringBuilder agentResponse = new();
+	AgentRunResponseUpdate? latestReceivedUpdate = null;
+	AgentThread? thread = null;
 
 	protected override void OnInitialized()
 	{
 		aIConversations = DataService.GetAIConversations().ToList();
+		LoadConversationState();
 		base.OnInitialized();
 	}
 
@@ -68,84 +78,136 @@
 		cancellationTokenSource = null;
 	}
 
-	public void NewChat(string prompt)
+	string GetConversationFileName()
+	{
+		var relUriPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+		var basePath = System.IO.Path.Combine("Settings", "ConversationStates");
+		if (!System.IO.Directory.Exists(basePath))
+		{
+			System.IO.Directory.CreateDirectory(basePath);
+		}
+		return System.IO.Path.Combine(basePath, $"v1_{relUriPath.GetHashCode().ToString().Replace("-", "")}.json");
+	}
+
+	void LoadConversationState()
+	{
+		try
+		{
+			string filename = GetConversationFileName();
+			if (System.IO.File.Exists(filename))
+			{
+				var fileContent = System.IO.File.ReadAllText(filename);
+				conversationState = System.Text.Json.JsonSerializer.Deserialize<ConversationState>(fileContent);
+				if (conversationState != null)
+				{
+					if (conversationState.SelectedConversationId.HasValue)
+					{
+						selectedAIConversation = aIConversations.FirstOrDefault(x => x.Id == conversationState.SelectedConversationId.Value);
+					}
+					if (!string.IsNullOrWhiteSpace(conversationState.AgentResponse))
+					{
+						agentResponse = new StringBuilder(conversationState.AgentResponse);
+					}
+					if (!string.IsNullOrWhiteSpace(conversationState.LatestReceivedUpdate))
+					{
+						latestReceivedUpdate = System.Text.Json.JsonSerializer.Deserialize<AgentRunResponseUpdate>(conversationState.LatestReceivedUpdate);
+					}
+				}
+			}
+	}
+		catch
+		{
+
+		}
+	}
+
+	void SaveConversationState()
+	{
+		try
+		{
+			var conversationState = new ConversationState
+			{
+				SelectedConversationId = selectedAIConversation?.Id,
+				AgentResponse = agentResponse?.ToString(),
+				Thread = thread?.Serialize(),
+				LatestReceivedUpdate = latestReceivedUpdate?.RawRepresentation == null ? null : System.Text.Json.JsonSerializer.Serialize(latestReceivedUpdate.RawRepresentation)
+			};
+
+			string filename = GetConversationFileName();
+			System.IO.File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(conversationState));
+		}
+		catch
+		{
+
+		}
+	}
+
+	public void RunConversation()
 	{
 		Stop();
-		agentResponse = new();
+		var inputPrompt = AddPromptToConversation();
 		cancellationTokenSource = new CancellationTokenSource();
+		var options = new AgentRunOptions
+		{
+			AllowBackgroundResponses = true,
+			ContinuationToken = latestReceivedUpdate?.ContinuationToken
+		};
+		latestReceivedUpdate = null;
 		var agent = AIConversationService.CreateAIConversationAgent(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
-
+		if (conversationState?.Thread != null)
+		{
+			thread = agent.DeserializeThread(conversationState.Thread.Value);
+		}
+		thread ??= agent.GetNewThread();
 		Task.Factory.StartNew(async () =>
 		{
-			await foreach (AgentRunResponseUpdate update in agent.RunStreamingAsync(prompt, cancellationToken: cancellationTokenSource.Token))
+			await foreach (AgentRunResponseUpdate update in agent.RunStreamingAsync(inputPrompt, thread: thread, options: options, cancellationToken: cancellationTokenSource.Token))
 			{
 				if (cancellationTokenSource != null)
 				{
+					latestReceivedUpdate = update;
 					agentResponse.Append(update.Text);
+					SaveConversationState();
 					await InvokeAsync(StateHasChanged);
 				}
 			}
-
+			cancellationTokenSource = null;
+			await InvokeAsync(StateHasChanged);
+			SaveConversationState();
 		});
-
-
-		// Task.Factory.StartNew(async () =>
-		// {
-		//     List<Microsoft.Extensions.AI.ChatMessage> messages = [];
-		//     var workflow = AIConversationService.CreateAIConversationWorkflow(selectedAIConversation!.Id, ScriptEngineType, AutomationHandler, UserCode, SystemCode, Tools, ConversationAgentInstructions, FunctionCallMiddleware);
-		//     messages.Add(new(ChatRole.User, prompt));
-		//     messages.AddRange(await RunWorkflowAsync(workflow, messages));
-		// });
 	}
 
-	async Task<List<Microsoft.Extensions.AI.ChatMessage>> RunWorkflowAsync(Workflow workflow, List<Microsoft.Extensions.AI.ChatMessage> messages)
+	public void ContinueChat()
 	{
-		string? lastExecutorId = null;
-		var run = await InProcessExecution.StreamAsync(workflow, messages);
-		await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
-		await foreach (WorkflowEvent @event in run.WatchStreamAsync().WithCancellation(cancellationTokenSource!.Token))
-		{
-			switch (@event)
-			{
-				case AgentRunUpdateEvent e:
-					{
-						if (e.ExecutorId != lastExecutorId)
-						{
-							lastExecutorId = e.ExecutorId;
-							System.Diagnostics.Debugger.Log(0, null, "\r\n");
-							System.Diagnostics.Debugger.Log(0, null, e.Update.AuthorName ?? e.ExecutorId);
-						}
+		RunConversation();
+	}
 
-						System.Diagnostics.Debugger.Log(0, null, e.Update.Text);
-						System.Diagnostics.Debugger.Log(0, null, "\r\n");
-						agentResponse.Append(e.Update.Text);
-						await InvokeAsync(StateHasChanged);
+	void AIConversationChange()
+	{
+		thread = null;
+		latestReceivedUpdate = null;
+		agentResponse = new();
+	}
 
-						if (e.Update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is FunctionCallContent call)
-						{
-							System.Diagnostics.Debugger.Log(0, null, "\r\n");
-							System.Diagnostics.Debugger.Log(0, null, $"Call '{call.Name}' with arguments: {System.Text.Json.JsonSerializer.Serialize(call.Arguments)}] \r\n");
-						}
+	public void NewChat()
+	{
+		thread = null;
+		latestReceivedUpdate = null;
+		agentResponse = new();
+		conversationState = null;
+		RunConversation();
+	}
 
-						break;
-					}
-				case WorkflowOutputEvent output:
-					System.Diagnostics.Debugger.Log(0, null, "----------------------------------");
-					System.Diagnostics.Debugger.Log(0, null, "\r\n");
-					return output.As<List<Microsoft.Extensions.AI.ChatMessage>>()!;
-
-				case ExecutorFailedEvent failedEvent:
-					if (failedEvent.Data is Exception ex)
-					{
-						System.Diagnostics.Debugger.Log(0, null, $"Error in agent {failedEvent.ExecutorId}: " + ex);
-						System.Diagnostics.Debugger.Log(0, null, "\r\n");
-					}
-
-					break;
-			}
-		}
-
-		return [];
+	string AddPromptToConversation()
+	{
+		var inputPrompt = prompt;
+		agentResponse.AppendLine();
+		agentResponse.AppendLine();
+		agentResponse.AppendLine($"> *{prompt}*");
+		agentResponse.AppendLine();
+		agentResponse.AppendLine();
+		prompt = "";
+		return inputPrompt;
 	}
 
 	async ValueTask<object?> FunctionCallMiddleware(AIAgent callingAgent, FunctionInvocationContext context, Func<FunctionInvocationContext, CancellationToken, ValueTask<object?>> next, CancellationToken cancellationToken)

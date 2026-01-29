@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS {AIConversationTableName}(Id INTEGER PRIMARY KEY AUTO
             var dataLength = reader.GetBytes(1, 0, dataBuffer, 0, dataBuffer.Length);
             if (dataLength > 0)
             {
-                record = Client.FromData<T>(id, dataBuffer, (int)dataLength);
+                record = ModelBase.FromData<T>(id, dataBuffer, (int)dataLength);
             }
             else
             {
