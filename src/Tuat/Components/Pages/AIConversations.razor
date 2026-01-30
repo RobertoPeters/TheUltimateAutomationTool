@@ -25,11 +25,26 @@
 					PageSize="20"
 					Density="Density.Compact"
 					AllowPaging="true"
+					 RowExpand="@OnRowExpand"
 					AllowVirtualization="true"
 					PagerHorizontalAlign="HorizontalAlign.Left"
 					ShowPagingSummary="true"
 					Data="@aiConversations"
 					TItem="AIConversation">
+		<Template Context="aiConversation">
+			<RadzenDataList Data="aiConversation.AIAgentSettingAIProviderId">
+				<Template Context="agentSetting">
+					<RadzenRow Gap="0">
+						<RadzenColumn Size="6">
+							<RadzenText>@(agentSetting.Key)</RadzenText>
+						</RadzenColumn>
+						<RadzenColumn Size="6">
+							<RadzenDropDown Data="@aiProviders" TextProperty="@nameof(AIProvider.Name)" ValueProperty="@nameof(AIProvider.Id)" Value="@agentSetting.Value" Change="@(async (arg) => await AIProviderSettingChangeAsync(aiConversation, agentSetting.Key, arg))" />
+						</RadzenColumn>
+					</RadzenRow>
+				</Template>
+			</RadzenDataList>
+		</Template>
 		<Columns>
 			<RadzenDataGridColumn TItem="AIConversation"
 								  Property="@nameof(AIConversation.Id)"
@@ -89,6 +104,31 @@
 		aiProviders = DataService.GetAIProviders();
 		InvokeAsync(grid!.Reload);
 		InvokeAsync(StateHasChanged);
+	}
+
+	private async Task AIProviderSettingChangeAsync(AIConversation aiConversation, string aiProviderName, object? value)
+	{
+		aiConversation.AIAgentSettingAIProviderId[aiProviderName] = (int?)value;
+		await DataService.AddOrUpdateAIConversationAsync(aiConversation);
+	}
+
+	private void OnRowExpand(AIConversation aiConversation)
+	{
+		var allAIAgentSettings = Helpers.Generics.Generic.AgentSettings.Values.ToList();
+		foreach (var key in aiConversation.AIAgentSettingAIProviderId.Keys.ToList())
+		{
+			if (!allAIAgentSettings.Any(x => x.Name == key))
+			{
+				aiConversation.AIAgentSettingAIProviderId.Remove(key);
+			}
+		}
+		foreach (var aiAgentSetting in allAIAgentSettings)
+		{
+			if (!aiConversation.AIAgentSettingAIProviderId.ContainsKey(aiAgentSetting.Name))
+			{
+				aiConversation.AIAgentSettingAIProviderId.Add(aiAgentSetting.Name, null);
+			};
+		}
 	}
 
 	private void AIConversationChanged(object? sender, AIConversation aiConversation)
