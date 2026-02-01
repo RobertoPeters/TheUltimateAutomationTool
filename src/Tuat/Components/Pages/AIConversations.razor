@@ -25,7 +25,7 @@
 					PageSize="20"
 					Density="Density.Compact"
 					AllowPaging="true"
-					 RowExpand="@OnRowExpand"
+					RowExpand="@OnRowExpand"
 					AllowVirtualization="true"
 					PagerHorizontalAlign="HorizontalAlign.Left"
 					ShowPagingSummary="true"
@@ -36,10 +36,15 @@
 				<Template Context="agentSetting">
 					<RadzenRow Gap="0">
 						<RadzenColumn Size="6">
-							<RadzenText>@(agentSetting.Key)</RadzenText>
+							<RadzenText>@(Helpers.Generics.Generic.AgentSettings.Values.FirstOrDefault(x => x.Id == agentSetting.Key)?.Name)</RadzenText>
 						</RadzenColumn>
 						<RadzenColumn Size="6">
-							<RadzenDropDown Data="@aiProviders" TextProperty="@nameof(AIProvider.Name)" ValueProperty="@nameof(AIProvider.Id)" Value="@agentSetting.Value" Change="@(async (arg) => await AIProviderSettingChangeAsync(aiConversation, agentSetting.Key, arg))" />
+							<RadzenDropDown Data="@aiProviders"
+											TextProperty="@nameof(AIProvider.Name)"
+											ValueProperty="@nameof(AIProvider.Id)"
+											Value="@agentSetting.Value"
+											AllowClear="true"
+											Change="@(async (arg) => await AIProviderSettingChangeAsync(aiConversation, agentSetting.Key, arg))" />
 						</RadzenColumn>
 					</RadzenRow>
 				</Template>
@@ -117,17 +122,18 @@
 		var allAIAgentSettings = Helpers.Generics.Generic.AgentSettings.Values.ToList();
 		foreach (var key in aiConversation.AIAgentSettingAIProviderId.Keys.ToList())
 		{
-			if (!allAIAgentSettings.Any(x => x.Name == key))
+			if (!allAIAgentSettings.Any(x => x.Id == key))
 			{
 				aiConversation.AIAgentSettingAIProviderId.Remove(key);
 			}
 		}
 		foreach (var aiAgentSetting in allAIAgentSettings)
 		{
-			if (!aiConversation.AIAgentSettingAIProviderId.ContainsKey(aiAgentSetting.Name))
+			if (!aiConversation.AIAgentSettingAIProviderId.ContainsKey(aiAgentSetting.Id))
 			{
-				aiConversation.AIAgentSettingAIProviderId.Add(aiAgentSetting.Name, null);
-			};
+				aiConversation.AIAgentSettingAIProviderId.Add(aiAgentSetting.Id, null);
+			}
+			;
 		}
 	}
 
